@@ -171,3 +171,54 @@ async def get_amazon_product(asin: str):
 async def list_searches():
     searches = await get_recent_searches()
     return {"searches": searches}
+
+
+@router.get("/api/automation/status")
+async def automation_status():
+    from automation.scheduler import get_status
+    return get_status()
+
+
+@router.post("/api/automation/trigger")
+async def automation_trigger(background_tasks: BackgroundTasks, category: str = None):
+    from automation.scheduler import trigger_scan_now
+    background_tasks.add_task(trigger_scan_now, category)
+    return {"message": f"Scan triggered for: {category or 'auto-selected category'}"}
+
+
+@router.get("/api/opportunities")
+async def list_opportunities(limit: int = 50, offset: int = 0):
+    import json
+    from database.db import get_pool
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch("""
+            SELECT p.*,
+                ms.avg_price AS amz_avg_price, ms.min_price AS amz_min_price,
+                ms.max_price AS amz_max_price, ms.avg_reviews AS amz_avg_reviews,
+                ms.competition_level AS amz_competition_level,
+                ms.avg_rating AS amz_avg_rating, ms.search_query AS amz_search_query,
+                oa.score AS ai_score, oa.summary AS ai_summary,
+                oa.margin_assessment AS ai_margin, oa.competition_analysis AS ai_competition,
+                oa.differentiation_ideas AS ai_differentiation, oa.risk_flags AS ai_risks,
+                oa.final_recommendation AS ai_recommendation, oa.analysed_at AS ai_analysed_at
+            FROM products p
+            JOIN market_snapshots ms ON p.product_id = ms.supplier_product_id
+            JOIN opportunity_analyses oa ON p.product_id = oa.product_id
+            WHERE oa.score IN ('strong', 'average')
+            ORDER BY
+                CASE oa.score WHEN 'strong' THEN 1 WHEN 'average' THEN 2 ELSE 3 END,
+                ms.avg_price DESC
+            LIMIT $1 OFFSET $2
+        """, limit, offset)
+    results = []
+    for row in rows:
+        d = dict(row)
+        for field in ("ai_differentiation", "ai_risks"):
+            if d.get(field):
+                try:
+                    d[field] = json.loads(d[field])
+                except Exception:
+                    d[field] = []
+        results.append(d)
+    return {"opportunities": results, "count": len(results)}

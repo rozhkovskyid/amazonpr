@@ -7,12 +7,15 @@ from fastapi.responses import FileResponse
 from contextlib import asynccontextmanager
 from database.db import init_db
 from api.routes import router
+from automation.scheduler import start_scheduler, stop_scheduler
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
+    start_scheduler(interval_minutes=30)
     yield
+    stop_scheduler()
 
 
 app = FastAPI(title="Amazon PR - Product Opportunity Discovery", lifespan=lifespan)
