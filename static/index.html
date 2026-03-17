@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Amazon PR — Product Opportunity Discovery</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3147;
+      --accent: #6c63ff;
+      --accent-dim: #4c45b3;
+      --green: #22c55e;
+      --yellow: #eab308;
+      --red: #ef4444;
+      --text: #e2e8f0;
+      --muted: #64748b;
+      --gold: #f59e0b;
+      --orange: #f97316;
+    }
+
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* ── Header ── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 32px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    header .logo { font-size: 18px; font-weight: 700; letter-spacing: -0.5px; }
+    header .logo span { color: var(--accent); }
+    header .subtitle { font-size: 12px; color: var(--muted); margin-left: 4px; }
+
+    /* ── Layout ── */
+    .app { display: flex; height: calc(100vh - 57px); }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 260px; min-width: 260px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      padding: 20px 16px; gap: 24px; overflow-y: auto;
+    }
+    .sidebar-label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; }
+    .search-history-item {
+      padding: 8px 10px; border-radius: 6px; cursor: pointer; font-size: 13px; color: var(--text);
+      display: flex; justify-content: space-between; align-items: center; transition: background 0.15s;
+    }
+    .search-history-item:hover { background: var(--surface2); }
+    .search-history-item.active { background: var(--accent); color: #fff; }
+    .search-history-item .count { font-size: 11px; color: var(--muted); background: var(--surface2); padding: 2px 6px; border-radius: 10px; }
+    .search-history-item.active .count { background: var(--accent-dim); color: #fff; }
+    .empty-sidebar { font-size: 13px; color: var(--muted); }
+
+    /* ── Main ── */
+    .main { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+
+    /* ── Search bar ── */
+    .search-bar {
+      padding: 20px 28px; border-bottom: 1px solid var(--border);
+      display: flex; gap: 10px; align-items: center;
+      background: var(--surface); flex-wrap: wrap;
+    }
+    .search-bar input {
+      flex: 1; min-width: 200px; background: var(--bg); border: 1px solid var(--border);
+      border-radius: 8px; padding: 10px 14px; font-size: 14px; color: var(--text);
+      outline: none; transition: border-color 0.2s; font-family: 'Inter', sans-serif;
+    }
+    .search-bar input:focus { border-color: var(--accent); }
+    .search-bar input::placeholder { color: var(--muted); }
+    .btn {
+      padding: 10px 18px; border-radius: 8px; font-size: 14px; font-weight: 600;
+      cursor: pointer; border: none; transition: opacity 0.2s, transform 0.1s;
+      font-family: 'Inter', sans-serif;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover { border-color: var(--accent); }
+    .toggle-detail { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); cursor: pointer; user-select: none; }
+    .toggle-detail input { accent-color: var(--accent); }
+
+    /* ── Status bar ── */
+    #statusBar {
+      padding: 10px 28px; font-size: 13px; color: var(--muted);
+      border-bottom: 1px solid var(--border); min-height: 38px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .spinner { width: 14px; height: 14px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; display: none; }
+    .spinner.active { display: block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Toolbar ── */
+    .toolbar {
+      padding: 10px 28px; border-bottom: 1px solid var(--border);
+      display: none; align-items: center; gap: 10px; background: var(--bg);
+    }
+    .toolbar.visible { display: flex; }
+    .toolbar-label { font-size: 13px; color: var(--muted); flex: 1; }
+
+    /* ── Product grid ── */
+    .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; padding: 20px 28px; }
+
+    /* ── Card ── */
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; overflow: hidden; display: flex; flex-direction: column;
+      transition: border-color 0.2s, transform 0.15s;
+    }
+    .card:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .card-image { width: 100%; height: 180px; object-fit: contain; background: #fff; display: block; }
+    .card-image-placeholder { width: 100%; height: 180px; background: var(--surface2); display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 12px; }
+    .card-body { padding: 14px 16px; flex: 1; display: flex; flex-direction: column; gap: 10px; }
+    .card-title { font-size: 13px; font-weight: 500; line-height: 1.4; color: var(--text); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+    .card-badges { display: flex; flex-wrap: wrap; gap: 5px; }
+    .badge { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.4px; }
+    .badge-gold { background: rgba(245,158,11,0.15); color: var(--gold); border: 1px solid rgba(245,158,11,0.3); }
+    .badge-trade { background: rgba(34,197,94,0.1); color: var(--green); border: 1px solid rgba(34,197,94,0.25); }
+    .badge-assessed { background: rgba(108,99,255,0.1); color: var(--accent); border: 1px solid rgba(108,99,255,0.25); }
+    .badge-verified { background: rgba(56,189,248,0.1); color: #38bdf8; border: 1px solid rgba(56,189,248,0.25); }
+
+    .card-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .stat { display: flex; flex-direction: column; gap: 2px; }
+    .stat-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; }
+    .stat-value { font-size: 13px; font-weight: 600; color: var(--text); }
+    .stat-value.price { color: var(--green); }
+
+    /* ── Amazon market panel ── */
+    .market-panel {
+      border-top: 1px solid var(--border);
+      padding: 10px 14px;
+      background: var(--bg);
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .market-panel-header { display: flex; align-items: center; justify-content: space-between; }
+    .market-panel-title { font-size: 10px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; }
+    .competition-pill {
+      font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px;
+      text-transform: uppercase; letter-spacing: 0.4px;
+    }
+    .comp-low { background: rgba(34,197,94,0.15); color: var(--green); }
+    .comp-medium { background: rgba(234,179,8,0.15); color: var(--yellow); }
+    .comp-high { background: rgba(239,68,68,0.15); color: var(--red); }
+    .comp-unknown { background: var(--surface2); color: var(--muted); }
+    .market-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+    .market-stat { display: flex; flex-direction: column; gap: 1px; }
+    .market-stat .sl { font-size: 9px; color: var(--muted); text-transform: uppercase; }
+    .market-stat .sv { font-size: 12px; font-weight: 600; color: var(--text); }
+    .market-stat .sv.amz { color: var(--orange); }
+
+    .btn-analyse {
+      width: 100%; padding: 7px; font-size: 12px; font-weight: 600;
+      border-radius: 6px; cursor: pointer; border: 1px solid var(--border);
+      background: var(--surface2); color: var(--muted);
+      transition: all 0.2s; font-family: 'Inter', sans-serif;
+    }
+    .btn-analyse:hover { border-color: var(--orange); color: var(--orange); }
+    .btn-analyse:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .card-supplier {
+      font-size: 12px; color: var(--muted);
+      border-top: 1px solid var(--border); padding-top: 10px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .supplier-name { font-weight: 500; color: var(--text); }
+    .quality-dots { display: flex; gap: 3px; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--border); }
+    .dot.filled { background: var(--accent); }
+    .card-specs { font-size: 11px; color: var(--muted); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+    /* ── Empty state ── */
+    .empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: var(--muted); padding: 60px; text-align: center; }
+    .empty-state .icon { font-size: 48px; }
+    .empty-state h2 { font-size: 18px; font-weight: 600; color: var(--text); }
+    .empty-state p { font-size: 14px; max-width: 360px; line-height: 1.6; }
+
+    /* ── Modal ── */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; align-items: center; justify-content: center; padding: 20px; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; max-width: 720px; width: 100%; max-height: 88vh; overflow-y: auto; padding: 28px; display: flex; flex-direction: column; gap: 18px; }
+    .modal-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+    .modal-title { font-size: 16px; font-weight: 600; line-height: 1.4; }
+    .modal-close { background: none; border: none; color: var(--muted); font-size: 20px; cursor: pointer; padding: 2px 6px; border-radius: 4px; flex-shrink: 0; }
+    .modal-close:hover { background: var(--surface2); color: var(--text); }
+    .modal-image { width: 100%; max-height: 260px; object-fit: contain; background: #fff; border-radius: 8px; }
+    .modal-section-title { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 8px; }
+    .spec-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; }
+    .spec-row { font-size: 12px; display: flex; gap: 6px; }
+    .spec-row .sl { color: var(--muted); min-width: 110px; flex-shrink: 0; }
+    .spec-row .sv { color: var(--text); font-weight: 500; }
+    .tier-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .tier-table th { text-align: left; color: var(--muted); font-weight: 500; padding: 4px 8px; border-bottom: 1px solid var(--border); }
+    .tier-table td { padding: 6px 8px; border-bottom: 1px solid var(--border); }
+    .tier-table tr:last-child td { border-bottom: none; }
+    .modal-link { font-size: 12px; color: var(--accent); text-decoration: none; }
+    .modal-link:hover { text-decoration: underline; }
+
+    /* Amazon section in modal */
+    .amz-section { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+    .amz-section-header { display: flex; align-items: center; justify-content: space-between; }
+    .amz-title { font-size: 13px; font-weight: 600; color: var(--orange); }
+    .amz-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .amz-stat { display: flex; flex-direction: column; gap: 2px; }
+    .amz-stat .al { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; }
+    .amz-stat .av { font-size: 14px; font-weight: 700; }
+    .amz-stat .av.good { color: var(--green); }
+    .amz-stat .av.warn { color: var(--yellow); }
+    .amz-stat .av.bad { color: var(--red); }
+    .amz-stat .av.neutral { color: var(--text); }
+    .amz-listing-row { display: flex; align-items: center; gap: 10px; padding: 8px; background: var(--surface); border-radius: 6px; font-size: 12px; }
+    .amz-listing-img { width: 40px; height: 40px; object-fit: contain; background: #fff; border-radius: 4px; flex-shrink: 0; }
+    .amz-listing-title { flex: 1; color: var(--text); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4; }
+    .amz-listing-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; flex-shrink: 0; }
+    .amz-listing-price { font-weight: 700; color: var(--green); }
+    .amz-listing-reviews { color: var(--muted); }
+    .no-market { font-size: 13px; color: var(--muted); text-align: center; padding: 12px; }
+
+    /* ── AI Score badge ── */
+    .ai-score-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 14px; border-top: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .ai-score-pill {
+      font-size: 11px; font-weight: 700; padding: 3px 10px;
+      border-radius: 10px; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .score-strong  { background: rgba(34,197,94,0.15);  color: var(--green);  border: 1px solid rgba(34,197,94,0.3); }
+    .score-average { background: rgba(234,179,8,0.15);  color: var(--yellow); border: 1px solid rgba(234,179,8,0.3); }
+    .score-weak    { background: rgba(249,115,22,0.15); color: var(--orange); border: 1px solid rgba(249,115,22,0.3); }
+    .score-avoid   { background: rgba(239,68,68,0.15);  color: var(--red);    border: 1px solid rgba(239,68,68,0.3); }
+    .btn-ai-analyse {
+      font-size: 11px; font-weight: 600; padding: 4px 10px;
+      border-radius: 6px; cursor: pointer; border: 1px solid var(--accent);
+      background: rgba(108,99,255,0.1); color: var(--accent);
+      transition: all 0.2s; font-family: 'Inter', sans-serif;
+    }
+    .btn-ai-analyse:hover { background: var(--accent); color: #fff; }
+    .btn-ai-analyse:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ── AI analysis section in modal ── */
+    .ai-section {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 14px;
+    }
+    .ai-section-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .ai-section-title { font-size: 13px; font-weight: 700; color: var(--accent); }
+    .ai-summary { font-size: 13px; color: var(--text); line-height: 1.6; }
+    .ai-block-title { font-size: 10px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+    .ai-block-text { font-size: 13px; color: var(--text); line-height: 1.6; }
+    .ai-list { display: flex; flex-direction: column; gap: 5px; }
+    .ai-list-item { font-size: 12px; color: var(--text); line-height: 1.5; padding-left: 14px; position: relative; }
+    .ai-list-item::before { content: '→'; position: absolute; left: 0; color: var(--accent); font-size: 11px; }
+    .ai-list-item.risk::before { content: '⚠'; color: var(--red); }
+    .ai-recommendation {
+      font-size: 13px; font-weight: 500; color: var(--text);
+      line-height: 1.6; padding: 12px; border-radius: 8px;
+      border-left: 3px solid var(--accent); background: rgba(108,99,255,0.06);
+    }
+    .ai-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    /* ── Amazon listing rows (clickable) ── */
+    .amz-listing-row { cursor: pointer; transition: background 0.15s; }
+    .amz-listing-row:hover { background: var(--surface2); }
+
+    /* ── Amazon detail drawer (slides in over the modal) ── */
+    .amz-drawer {
+      position: fixed; inset: 0; z-index: 200;
+      display: none; align-items: center; justify-content: center; padding: 20px;
+      background: rgba(0,0,0,0.75);
+    }
+    .amz-drawer.open { display: flex; }
+    .amz-drawer-panel {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; max-width: 680px; width: 100%;
+      max-height: 90vh; overflow-y: auto;
+      padding: 0; display: flex; flex-direction: column;
+    }
+    .amz-drawer-header {
+      position: sticky; top: 0; background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 20px; display: flex; align-items: center; gap: 12px; z-index: 1;
+    }
+    .amz-drawer-back {
+      background: none; border: none; color: var(--muted);
+      font-size: 18px; cursor: pointer; padding: 2px 8px;
+      border-radius: 4px; flex-shrink: 0;
+    }
+    .amz-drawer-back:hover { background: var(--surface2); color: var(--text); }
+    .amz-drawer-title { font-size: 14px; font-weight: 600; line-height: 1.4; flex: 1; }
+    .amz-drawer-body { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+    .amz-drawer-image { width: 100%; max-height: 260px; object-fit: contain; background: #fff; border-radius: 8px; }
+    .amz-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 20px; }
+    .amz-detail-row { display: flex; flex-direction: column; gap: 2px; }
+    .amz-detail-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; }
+    .amz-detail-value { font-size: 13px; font-weight: 600; color: var(--text); }
+    .amz-detail-value.price { color: var(--green); }
+    .amz-detail-value.orange { color: var(--orange); }
+    .rating-bar-wrap { display: flex; flex-direction: column; gap: 4px; }
+    .rating-bar-row { display: flex; align-items: center; gap: 6px; font-size: 11px; }
+    .rating-bar-row .star-label { color: var(--muted); width: 24px; flex-shrink: 0; }
+    .rating-bar { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+    .rating-bar-fill { height: 100%; background: var(--gold); border-radius: 3px; }
+    .rating-bar-row .pct { color: var(--muted); width: 28px; text-align: right; }
+    .feature-list { display: flex; flex-direction: column; gap: 5px; }
+    .feature-item { font-size: 12px; color: var(--text); line-height: 1.5; padding-left: 12px; position: relative; }
+    .feature-item::before { content: '•'; position: absolute; left: 0; color: var(--accent); }
+    .amz-open-btn {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 12px; border-radius: 8px;
+      background: var(--accent); color: #fff;
+      font-size: 14px; font-weight: 600;
+      text-decoration: none; transition: opacity 0.2s;
+    }
+    .amz-open-btn:hover { opacity: 0.88; }
+    .amz-spinner { text-align: center; padding: 40px; color: var(--muted); font-size: 13px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Amazon<span>PR</span></div>
+  <div class="subtitle">Supplier Product Discovery — Stage 2</div>
+</header>
+
+<div class="app">
+  <aside class="sidebar">
+    <div>
+      <div class="sidebar-label">Recent Searches</div>
+      <div id="searchHistory"><div class="empty-sidebar">No searches yet.</div></div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="search-bar">
+      <input id="queryInput" type="text" placeholder="Search Alibaba suppliers… e.g. silicone spatula, LED desk lamp" />
+      <label class="toggle-detail">
+        <input type="checkbox" id="fetchDetails" />
+        Full details
+      </label>
+      <button class="btn btn-primary" id="searchBtn" onclick="runSearch()">Search Alibaba</button>
+    </div>
+
+    <div id="statusBar">
+      <div class="spinner" id="spinner"></div>
+      <span id="statusText">Search for a product to find Alibaba suppliers.</span>
+    </div>
+
+    <div id="toolbar" class="toolbar">
+      <span class="toolbar-label" id="toolbarLabel"></span>
+      <button class="btn btn-secondary" id="analyseAllBtn" onclick="analyseAll()" style="font-size:13px;padding:7px 14px;">
+        Analyse All on Amazon
+      </button>
+    </div>
+
+    <div id="results"></div>
+  </div>
+</div>
+
+<!-- Detail Modal -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal" id="modalContent"></div>
+</div>
+
+<!-- Amazon Product Drawer -->
+<div class="amz-drawer" id="amzDrawer" onclick="closeDrawer(event)">
+  <div class="amz-drawer-panel" id="amzDrawerPanel">
+    <div class="amz-drawer-header">
+      <button class="amz-drawer-back" onclick="closeDrawer()">←</button>
+      <div class="amz-drawer-title" id="amzDrawerTitle">Amazon Product</div>
+    </div>
+    <div class="amz-drawer-body" id="amzDrawerBody">
+      <div class="amz-spinner">Loading…</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let currentQuery = null;
+  let allProducts = [];
+  let analysingIds = new Set();
+
+  document.addEventListener('DOMContentLoaded', () => {
+    loadSearchHistory();
+    document.getElementById('queryInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter') runSearch();
+    });
+  });
+
+  // ── History ──────────────────────────────────────────────────────────────────
+  async function loadSearchHistory() {
+    try {
+      const res = await fetch('/api/searches');
+      const data = await res.json();
+      renderHistory(data.searches || []);
+    } catch {}
+  }
+
+  function renderHistory(searches) {
+    const el = document.getElementById('searchHistory');
+    if (!searches.length) { el.innerHTML = '<div class="empty-sidebar">No searches yet.</div>'; return; }
+    el.innerHTML = searches.map(s => `
+      <div class="search-history-item ${s.query === currentQuery ? 'active' : ''}" onclick="loadQuery('${escHtml(s.query)}')">
+        <span>${escHtml(s.query)}</span>
+        <span class="count">${s.total || 0}</span>
+      </div>`).join('');
+  }
+
+  async function loadQuery(query) {
+    currentQuery = query;
+    document.getElementById('queryInput').value = query;
+    setStatus(`Showing results for "${query}"`, false);
+    const res = await fetch(`/api/products?query=${encodeURIComponent(query)}&limit=100`);
+    const data = await res.json();
+    allProducts = data.products || [];
+    renderProducts(allProducts);
+    loadSearchHistory();
+    updateToolbar();
+  }
+
+  function updateToolbar() {
+    const bar = document.getElementById('toolbar');
+    const label = document.getElementById('toolbarLabel');
+    if (!allProducts.length) { bar.classList.remove('visible'); return; }
+    const analysed = allProducts.filter(p => p.amz_competition_level).length;
+    bar.classList.add('visible');
+    label.textContent = `${allProducts.length} products · ${analysed} analysed on Amazon`;
+  }
+
+  // ── Search Alibaba ───────────────────────────────────────────────────────────
+  async function runSearch() {
+    const query = document.getElementById('queryInput').value.trim();
+    if (!query) return;
+    const fetchDetails = document.getElementById('fetchDetails').checked;
+
+    setStatus(`Searching Alibaba for "${query}"…`, true);
+    document.getElementById('searchBtn').disabled = true;
+    document.getElementById('results').innerHTML = '';
+
+    try {
+      const res = await fetch('/api/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query, page: 1, fetch_details: fetchDetails })
+      });
+      const data = await res.json();
+      if (!res.ok) { setStatus(`Error: ${data.detail || 'Search failed'}`, false); return; }
+      setStatus(`Found ${data.products_found} products for "${query}"`, false);
+      currentQuery = query;
+      await loadQuery(query);
+    } catch (err) {
+      setStatus(`Network error: ${err.message}`, false);
+    } finally {
+      document.getElementById('searchBtn').disabled = false;
+    }
+  }
+
+  // ── Analyse All on Amazon ────────────────────────────────────────────────────
+  async function analyseAll() {
+    if (!currentQuery) return;
+    const btn = document.getElementById('analyseAllBtn');
+    btn.disabled = true;
+    btn.textContent = 'Analysing…';
+    setStatus(`Running Amazon market analysis for all products in "${currentQuery}"…`, true);
+
+    try {
+      await fetch(`/api/analyze-market-batch?query=${encodeURIComponent(currentQuery)}`, { method: 'POST' });
+      // Poll until done
+      await pollUntilAnalysed();
+    } catch (err) {
+      setStatus(`Error: ${err.message}`, false);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Analyse All on Amazon';
+    }
+  }
+
+  async function pollUntilAnalysed() {
+    for (let i = 0; i < 60; i++) {
+      await new Promise(r => setTimeout(r, 3000));
+      const res = await fetch(`/api/products?query=${encodeURIComponent(currentQuery)}&limit=100`);
+      const data = await res.json();
+      allProducts = data.products || [];
+      renderProducts(allProducts);
+      updateToolbar();
+      const analysed = allProducts.filter(p => p.amz_competition_level).length;
+      setStatus(`Analysing… ${analysed}/${allProducts.length} products done`, true);
+      if (analysed >= allProducts.length) break;
+    }
+    setStatus(`Amazon analysis complete for "${currentQuery}"`, false);
+    document.getElementById('spinner').classList.remove('active');
+  }
+
+  // ── Analyse single product ───────────────────────────────────────────────────
+  function handleAnalyseClick(e) {
+    e.stopPropagation();
+    e.preventDefault();
+    const btn = e.currentTarget;
+    const pid = btn.dataset.pid;
+    const product = allProducts.find(p => p.product_id === pid);
+    if (product) analyseOne(pid, product.title, btn);
+  }
+
+  async function analyseOne(productId, productTitle, btn) {
+    if (analysingIds.has(productId)) return;
+    analysingIds.add(productId);
+    btn.disabled = true;
+    btn.textContent = 'Analysing…';
+
+    try {
+      const res = await fetch('/api/analyze-market', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ product_id: productId, product_title: productTitle })
+      });
+      const data = await res.json();
+      if (!res.ok) { btn.textContent = 'Failed'; return; }
+
+      // Refresh this card
+      const pRes = await fetch(`/api/products?query=${encodeURIComponent(currentQuery)}&limit=100`);
+      const pData = await pRes.json();
+      allProducts = pData.products || [];
+      renderProducts(allProducts);
+      updateToolbar();
+    } catch {
+      btn.textContent = 'Error';
+    } finally {
+      analysingIds.delete(productId);
+    }
+  }
+
+  // ── Render grid ──────────────────────────────────────────────────────────────
+  function renderProducts(products) {
+    const el = document.getElementById('results');
+    if (!products.length) {
+      el.innerHTML = `
+        <div class="empty-state">
+          <div class="icon">📦</div>
+          <h2>No products found</h2>
+          <p>Try a different search query. Be specific — e.g. "stainless steel travel mug" rather than just "mug".</p>
+        </div>`;
+      return;
+    }
+    el.innerHTML = `<div class="product-grid">${products.map(p => cardHtml(p)).join('')}</div>`;
+  }
+
+  function competitionClass(level) {
+    return { low: 'comp-low', medium: 'comp-medium', high: 'comp-high' }[level] || 'comp-unknown';
+  }
+
+  function cardHtml(p) {
+    const badges = [
+      p.is_gold_supplier ? '<span class="badge badge-gold">Gold</span>' : '',
+      p.has_trade_assurance ? '<span class="badge badge-trade">Trade Assurance</span>' : '',
+      p.is_assessed ? '<span class="badge badge-assessed">Assessed</span>' : '',
+    ].filter(Boolean).join('');
+
+    const dots = [0,1,2,3].map(i =>
+      `<div class="dot ${i < p.supplier_quality_score ? 'filled' : ''}"></div>`
+    ).join('');
+
+    const img = p.thumbnail
+      ? `<img class="card-image" src="https:${p.thumbnail}" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/><div class="card-image-placeholder" style="display:none">No image</div>`
+      : `<div class="card-image-placeholder">No image</div>`;
+
+    const specs = p.spec_summary
+      ? `<div class="card-specs">${escHtml(p.spec_summary.substring(0, 100))}</div>` : '';
+
+    // Amazon market panel
+    let marketPanel = '';
+    if (p.amz_competition_level) {
+      const compClass = competitionClass(p.amz_competition_level);
+      const spread = p.amz_price_spread ? `$${p.amz_price_spread.toFixed(2)}` : '—';
+      marketPanel = `
+        <div class="market-panel">
+          <div class="market-panel-header">
+            <span class="market-panel-title">Amazon Market</span>
+            <span class="competition-pill ${compClass}">${p.amz_competition_level} competition</span>
+          </div>
+          <div class="market-stats">
+            <div class="market-stat"><div class="sl">AMZ Price</div><div class="sv amz">$${p.amz_min_price || '?'}–$${p.amz_max_price || '?'}</div></div>
+            <div class="market-stat"><div class="sl">Avg Reviews</div><div class="sv">${p.amz_avg_reviews ? Math.round(p.amz_avg_reviews) : '—'}</div></div>
+            <div class="market-stat"><div class="sl">Price Spread</div><div class="sv">${spread}</div></div>
+          </div>
+        </div>`;
+    } else {
+      marketPanel = `
+        <div class="market-panel">
+          <button class="btn-analyse" data-pid="${escHtml(p.product_id)}" onclick="handleAnalyseClick(event)">
+            Check Amazon Market →
+          </button>
+        </div>`;
+    }
+
+    // AI score bar
+    let aiBar = '';
+    if (p.ai_score) {
+      aiBar = `
+        <div class="ai-score-bar">
+          <span class="ai-score-pill score-${p.ai_score}">${p.ai_score} opportunity</span>
+          <span style="font-size:11px;color:var(--muted)">AI Analysis ✓</span>
+        </div>`;
+    } else if (p.amz_competition_level) {
+      aiBar = `
+        <div class="ai-score-bar">
+          <span style="font-size:11px;color:var(--muted)">AI not run yet</span>
+          <button class="btn-ai-analyse" data-pid="${escHtml(p.product_id)}" onclick="handleAiAnalyse(event)">
+            Run AI Analysis
+          </button>
+        </div>`;
+    }
+
+    return `
+      <div class="card" onclick="openModal('${escHtml(p.product_id)}')" style="cursor:pointer">
+        ${img}
+        <div class="card-body">
+          <div class="card-title">${escHtml(p.title)}</div>
+          <div class="card-badges">${badges || '<span style="font-size:11px;color:var(--muted)">No badges</span>'}</div>
+          <div class="card-stats">
+            <div class="stat"><div class="stat-label">Supplier Price</div><div class="stat-value price">${p.price_range || '—'}</div></div>
+            <div class="stat"><div class="stat-label">MOQ</div><div class="stat-value">${p.moq ? p.moq + ' ' + (p.moq_unit || '') : '—'}</div></div>
+            <div class="stat"><div class="stat-label">Supplier Age</div><div class="stat-value">${p.years_active ? p.years_active + ' yrs' : '—'}</div></div>
+            <div class="stat"><div class="stat-label">Employees</div><div class="stat-value">${p.employee_count || '—'}</div></div>
+          </div>
+          ${specs}
+          <div class="card-supplier">
+            <div>
+              <div style="font-size:10px;color:var(--muted)">Supplier</div>
+              <div class="supplier-name">${escHtml(p.supplier_name || 'Unknown')}</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
+              <div style="font-size:10px;color:var(--muted)">Trust</div>
+              <div class="quality-dots">${dots}</div>
+            </div>
+          </div>
+        </div>
+        ${marketPanel}
+        ${aiBar}
+      </div>`;
+  }
+
+  // ── Modal ─────────────────────────────────────────────────────────────────────
+  function openModal(productId) {
+    const p = allProducts.find(x => x.product_id === productId);
+    if (!p) return;
+    const raw = JSON.parse(p.raw_json || '{}');
+    const amzRaw = p.amz_raw_json ? JSON.parse(p.amz_raw_json) : null;
+
+    const badges = [
+      p.is_gold_supplier ? '<span class="badge badge-gold">Gold Supplier</span>' : '',
+      p.has_trade_assurance ? '<span class="badge badge-trade">Trade Assurance</span>' : '',
+      p.is_assessed ? '<span class="badge badge-assessed">Assessed</span>' : '',
+      p.is_verified ? '<span class="badge badge-verified">Verified</span>' : '',
+    ].filter(Boolean).join('');
+
+    const tiers = (raw.pricing?.tiers || []).filter(t => t.formatted_price || t.unit_price);
+    const tierTable = tiers.length ? `
+      <div class="modal-section-title">Volume Pricing</div>
+      <table class="tier-table">
+        <tr><th>Qty</th><th>Unit Price</th></tr>
+        ${tiers.map(t => `<tr><td>${t.min_units || ''}${t.max_units && t.max_units > 0 ? '–' + t.max_units : '+'} ${t.unit_label || ''}</td><td>${t.formatted_price || t.unit_price || '—'}</td></tr>`).join('')}
+      </table>` : '';
+
+    const attrs = (raw.specifications?.attributes || []).slice(0, 20);
+    const specRows = attrs.map(a =>
+      `<div class="spec-row"><span class="sl">${escHtml(a.label)}</span><span class="sv">${escHtml(a.value)}</span></div>`
+    ).join('');
+
+    // Amazon section
+    let amzSection = '';
+    if (p.amz_competition_level && amzRaw) {
+      const compClass = competitionClass(p.amz_competition_level);
+      const weakCompetitors = p.amz_weak_competitors || 0;
+      const strongCompetitors = p.amz_strong_competitors || 0;
+
+      const topListings = (amzRaw.top_listings || []).slice(0, 5).map(l => `
+        <div class="amz-listing-row" data-asin="${escHtml(l.asin)}" onclick="handleListingClick(event)">
+          ${l.image_url ? `<img class="amz-listing-img" src="${escHtml(l.image_url)}" alt=""/>` : '<div class="amz-listing-img" style="background:var(--surface2)"></div>'}
+          <div class="amz-listing-title">${escHtml(l.title || '')}</div>
+          <div class="amz-listing-meta">
+            <div class="amz-listing-price">${l.price ? '$' + l.price : '—'}</div>
+            <div class="amz-listing-reviews">${l.reviews != null ? l.reviews.toLocaleString() + ' reviews' : '—'}</div>
+          </div>
+        </div>`).join('');
+
+      amzSection = `
+        <div class="amz-section">
+          <div class="amz-section-header">
+            <span class="amz-title">Amazon Market Analysis</span>
+            <span class="competition-pill ${compClass}">${p.amz_competition_level} competition</span>
+          </div>
+          <div class="amz-grid">
+            <div class="amz-stat">
+              <div class="al">AMZ Price Range</div>
+              <div class="av neutral">$${p.amz_min_price || '?'} – $${p.amz_max_price || '?'}</div>
+            </div>
+            <div class="amz-stat">
+              <div class="al">Avg Reviews</div>
+              <div class="av ${p.amz_avg_reviews > 500 ? 'bad' : p.amz_avg_reviews > 100 ? 'warn' : 'good'}">${p.amz_avg_reviews ? Math.round(p.amz_avg_reviews) : '—'}</div>
+            </div>
+            <div class="amz-stat">
+              <div class="al">Avg Rating</div>
+              <div class="av neutral">${p.amz_avg_rating ? p.amz_avg_rating.toFixed(1) + ' ★' : '—'}</div>
+            </div>
+            <div class="amz-stat">
+              <div class="al">Price Spread</div>
+              <div class="av ${p.amz_price_spread > 10 ? 'good' : 'warn'}">${p.amz_price_spread ? '$' + p.amz_price_spread.toFixed(2) : '—'}</div>
+            </div>
+            <div class="amz-stat">
+              <div class="al">Weak (<100 rev)</div>
+              <div class="av ${weakCompetitors > 5 ? 'good' : 'warn'}">${weakCompetitors}</div>
+            </div>
+            <div class="amz-stat">
+              <div class="al">Dominant (1k+)</div>
+              <div class="av ${strongCompetitors > 5 ? 'bad' : strongCompetitors > 2 ? 'warn' : 'good'}">${strongCompetitors}</div>
+            </div>
+          </div>
+          ${topListings ? `<div class="modal-section-title">Top Listings</div>${topListings}` : ''}
+        </div>`;
+    } else {
+      amzSection = `
+        <div class="amz-section">
+          <div class="no-market">No Amazon analysis yet. Click "Check Amazon Market" on the card.</div>
+        </div>`;
+    }
+
+    const alibabUrl = p.url ? `https:${p.url}` : null;
+
+    document.getElementById('modalContent').innerHTML = `
+      <div class="modal-header">
+        <div class="modal-title">${escHtml(p.title)}</div>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+      ${p.thumbnail ? `<img class="modal-image" src="https:${p.thumbnail}" alt=""/>` : ''}
+      <div class="card-badges">${badges}</div>
+
+      <div>
+        <div class="modal-section-title">Supplier Pricing & MOQ</div>
+        <div class="spec-grid">
+          <div class="spec-row"><span class="sl">Price Range</span><span class="sv" style="color:var(--green)">${p.price_range || '—'}</span></div>
+          <div class="spec-row"><span class="sl">MOQ</span><span class="sv">${p.moq ? p.moq + ' ' + (p.moq_unit || '') : '—'}</span></div>
+        </div>
+        ${tierTable}
+      </div>
+
+      <div>
+        <div class="modal-section-title">Supplier</div>
+        <div class="spec-grid">
+          <div class="spec-row"><span class="sl">Name</span><span class="sv">${escHtml(p.supplier_name || '—')}</span></div>
+          <div class="spec-row"><span class="sl">Country</span><span class="sv">${p.supplier_country || '—'}</span></div>
+          <div class="spec-row"><span class="sl">Employees</span><span class="sv">${p.employee_count || '—'}</span></div>
+          <div class="spec-row"><span class="sl">Years Active</span><span class="sv">${p.years_active ? p.years_active + ' years' : '—'}</span></div>
+          <div class="spec-row"><span class="sl">Business Type</span><span class="sv">${escHtml(raw.supplier?.business_type || '—')}</span></div>
+          <div class="spec-row"><span class="sl">Trust Score</span><span class="sv">${p.supplier_quality_score}/4</span></div>
+        </div>
+      </div>
+
+      ${amzSection}
+
+      ${buildAiSection(p)}
+
+      ${attrs.length ? `
+      <div>
+        <div class="modal-section-title">Product Specifications</div>
+        <div class="spec-grid">${specRows}</div>
+      </div>` : ''}
+
+      ${alibabUrl ? `<a class="modal-link" href="${alibabUrl}" target="_blank" rel="noopener">View on Alibaba →</a>` : ''}
+    `;
+
+    document.getElementById('modalOverlay').classList.add('open');
+  }
+
+  function buildAiSection(p) {
+    if (!p.ai_score) {
+      if (!p.amz_competition_level) return ''; // no market data yet, don't show
+      return `
+        <div class="ai-section">
+          <div class="ai-section-header">
+            <span class="ai-section-title">AI Opportunity Analysis</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <span style="font-size:13px;color:var(--muted)">Not yet analysed</span>
+            <button class="btn-ai-analyse" data-pid="${escHtml(p.product_id)}" onclick="handleAiAnalyseModal(event)">
+              Run AI Analysis
+            </button>
+          </div>
+        </div>`;
+    }
+
+    const diffIdeas = (Array.isArray(p.ai_differentiation) ? p.ai_differentiation : [])
+      .map(i => `<div class="ai-list-item">${escHtml(i)}</div>`).join('');
+
+    const riskFlags = (Array.isArray(p.ai_risks) ? p.ai_risks : [])
+      .map(r => `<div class="ai-list-item risk">${escHtml(r)}</div>`).join('');
+
+    return `
+      <div class="ai-section">
+        <div class="ai-section-header">
+          <span class="ai-section-title">AI Opportunity Analysis</span>
+          <span class="ai-score-pill score-${p.ai_score}">${p.ai_score} opportunity</span>
+        </div>
+
+        <div class="ai-summary">${escHtml(p.ai_summary || '')}</div>
+
+        <div class="ai-two-col">
+          <div>
+            <div class="ai-block-title">Margin Assessment</div>
+            <div class="ai-block-text">${escHtml(p.ai_margin || '—')}</div>
+          </div>
+          <div>
+            <div class="ai-block-title">Competition</div>
+            <div class="ai-block-text">${escHtml(p.ai_competition || '—')}</div>
+          </div>
+        </div>
+
+        ${diffIdeas ? `<div><div class="ai-block-title">Differentiation Ideas</div><div class="ai-list">${diffIdeas}</div></div>` : ''}
+        ${riskFlags ? `<div><div class="ai-block-title">Risk Flags</div><div class="ai-list">${riskFlags}</div></div>` : ''}
+
+        <div>
+          <div class="ai-block-title">Recommendation</div>
+          <div class="ai-recommendation">${escHtml(p.ai_recommendation || '')}</div>
+        </div>
+      </div>`;
+  }
+
+  function handleAiAnalyseModal(e) {
+    e.stopPropagation();
+    const btn = e.currentTarget;
+    const pid = btn.dataset.pid;
+    btn.disabled = true;
+    btn.textContent = 'Analysing…';
+    runAiAnalysis(pid, null).then(() => {
+      // Refresh the modal with updated data
+      const updated = allProducts.find(x => x.product_id === pid);
+      if (updated) openModal(pid);
+    });
+  }
+
+  function closeModal(event) {
+    if (!event || event.target === document.getElementById('modalOverlay')) {
+      document.getElementById('modalOverlay').classList.remove('open');
+    }
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      if (document.getElementById('amzDrawer').classList.contains('open')) closeDrawer();
+      else closeModal();
+    }
+  });
+
+  // ── AI Analysis ──────────────────────────────────────────────────────────────
+  function handleAiAnalyse(e) {
+    e.stopPropagation();
+    const btn = e.currentTarget;
+    const pid = btn.dataset.pid;
+    runAiAnalysis(pid, btn);
+  }
+
+  async function runAiAnalysis(productId, btn) {
+    if (btn) { btn.disabled = true; btn.textContent = 'Analysing…'; }
+    try {
+      const res = await fetch(`/api/analyse-opportunity/${encodeURIComponent(productId)}`, { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
+
+      // Refresh products and re-render
+      const pRes = await fetch(`/api/products?query=${encodeURIComponent(currentQuery)}&limit=100`);
+      const pData = await pRes.json();
+      allProducts = pData.products || [];
+      renderProducts(allProducts);
+      updateToolbar();
+    } catch (err) {
+      if (btn) { btn.disabled = false; btn.textContent = 'Run AI Analysis'; }
+      alert(`AI analysis failed: ${err.message}`);
+    }
+  }
+
+  // ── Amazon Product Drawer ─────────────────────────────────────────────────────
+  function handleListingClick(e) {
+    const row = e.currentTarget;
+    const asin = row.dataset.asin;
+    if (!asin || asin === 'undefined' || asin.length < 5) {
+      alert('No ASIN available for this listing.');
+      return;
+    }
+    const title = row.querySelector('.amz-listing-title')?.textContent || asin;
+    openAmzDrawer(asin, title);
+  }
+
+  async function openAmzDrawer(asin, title) {
+    const drawer = document.getElementById('amzDrawer');
+    document.getElementById('amzDrawerTitle').textContent = title || asin;
+    document.getElementById('amzDrawerBody').innerHTML = '<div class="amz-spinner">Loading Amazon data…</div>';
+    drawer.classList.add('open');
+
+    try {
+      const res = await fetch(`/api/amazon/product/${encodeURIComponent(asin)}`);
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.detail || `HTTP ${res.status}`);
+      document.getElementById('amzDrawerTitle').textContent = d.title || asin;
+      document.getElementById('amzDrawerBody').innerHTML = renderAmzDetail(d);
+    } catch (err) {
+      document.getElementById('amzDrawerBody').innerHTML = `
+        <div style="display:flex;flex-direction:column;gap:16px;padding:8px">
+          <div style="color:var(--red);font-size:13px">Could not load full product data: ${escHtml(err.message)}</div>
+          <a class="amz-open-btn" href="https://www.amazon.com/dp/${encodeURIComponent(asin)}" target="_blank" rel="noopener">
+            View on Amazon directly →
+          </a>
+        </div>`;
+    }
+  }
+
+  function closeDrawer(event) {
+    if (!event || event.target === document.getElementById('amzDrawer')) {
+      document.getElementById('amzDrawer').classList.remove('open');
+    }
+  }
+
+  function renderAmzDetail(d) {
+    const ratingDist = d.detailed_rating || {};
+    const totalRatings = Object.values(ratingDist).reduce((a, b) => a + b, 0) || 1;
+    const ratingBars = [5,4,3,2,1].map(star => {
+      const count = ratingDist[star] || 0;
+      const pct = Math.round((count / totalRatings) * 100);
+      return `
+        <div class="rating-bar-row">
+          <span class="star-label">${star}★</span>
+          <div class="rating-bar"><div class="rating-bar-fill" style="width:${pct}%"></div></div>
+          <span class="pct">${pct}%</span>
+        </div>`;
+    }).join('');
+
+    const features = (d.key_features || []).slice(0, 6).map(f =>
+      `<div class="feature-item">${escHtml(f)}</div>`
+    ).join('');
+
+    const techDetails = Object.entries(d.technical_details || {}).slice(0, 10).map(([k, v]) =>
+      `<div class="spec-row"><span class="sl">${escHtml(k)}</span><span class="sv">${escHtml(v)}</span></div>`
+    ).join('');
+
+    const productDetails = Object.entries(d.product_details || {}).slice(0, 10).map(([k, v]) =>
+      `<div class="spec-row"><span class="sl">${escHtml(k)}</span><span class="sv">${escHtml(v)}</span></div>`
+    ).join('');
+
+    const badges = [
+      d.is_bestseller ? '<span class="badge badge-gold">Best Seller</span>' : '',
+      d.is_amazon_choice ? '<span class="badge badge-trade">Amazon\'s Choice</span>' : '',
+      d.is_prime ? '<span class="badge badge-assessed">Prime</span>' : '',
+    ].filter(Boolean).join('');
+
+    return `
+      ${d.main_image_url ? `<img class="amz-drawer-image" src="${escHtml(d.main_image_url)}" alt=""/>` : ''}
+
+      <div class="card-badges">${badges}</div>
+
+      <div class="amz-detail-grid">
+        <div class="amz-detail-row">
+          <div class="amz-detail-label">Price</div>
+          <div class="amz-detail-value price">${d.current_price ? '$' + d.current_price.toFixed(2) : '—'}</div>
+        </div>
+        <div class="amz-detail-row">
+          <div class="amz-detail-label">Original Price</div>
+          <div class="amz-detail-value">${d.original_price ? '$' + d.original_price.toFixed(2) : '—'}</div>
+        </div>
+        <div class="amz-detail-row">
+          <div class="amz-detail-label">Rating</div>
+          <div class="amz-detail-value orange">${d.rating ? d.rating + ' ★' : '—'}</div>
+        </div>
+        <div class="amz-detail-row">
+          <div class="amz-detail-label">Reviews</div>
+          <div class="amz-detail-value">${d.reviews != null ? d.reviews.toLocaleString() : '—'}</div>
+        </div>
+        <div class="amz-detail-row">
+          <div class="amz-detail-label">Sales Volume</div>
+          <div class="amz-detail-value">${escHtml(d.sales_volume || '—')}</div>
+        </div>
+        <div class="amz-detail-row">
+          <div class="amz-detail-label">Num. Offers</div>
+          <div class="amz-detail-value">${d.number_of_offers ?? '—'}</div>
+        </div>
+        <div class="amz-detail-row">
+          <div class="amz-detail-label">Availability</div>
+          <div class="amz-detail-value">${escHtml(d.availability || '—')}</div>
+        </div>
+        <div class="amz-detail-row">
+          <div class="amz-detail-label">Brand</div>
+          <div class="amz-detail-value">${escHtml(d.brand || '—')}</div>
+        </div>
+        <div class="amz-detail-row">
+          <div class="amz-detail-label">ASIN</div>
+          <div class="amz-detail-value" style="font-family:monospace;font-size:12px">${escHtml(d.asin || '—')}</div>
+        </div>
+        <div class="amz-detail-row">
+          <div class="amz-detail-label">A+ Content</div>
+          <div class="amz-detail-value">${d.has_aplus_content ? 'Yes' : 'No'}</div>
+        </div>
+      </div>
+
+      ${totalRatings > 1 ? `
+        <div>
+          <div class="modal-section-title">Rating Breakdown</div>
+          <div class="rating-bar-wrap">${ratingBars}</div>
+        </div>` : ''}
+
+      ${features ? `
+        <div>
+          <div class="modal-section-title">Key Features</div>
+          <div class="feature-list">${features}</div>
+        </div>` : ''}
+
+      ${techDetails ? `
+        <div>
+          <div class="modal-section-title">Technical Details</div>
+          <div class="spec-grid">${techDetails}</div>
+        </div>` : ''}
+
+      ${productDetails ? `
+        <div>
+          <div class="modal-section-title">Product Details</div>
+          <div class="spec-grid">${productDetails}</div>
+        </div>` : ''}
+
+      ${d.link ? `<a class="amz-open-btn" href="${escHtml(d.link)}" target="_blank" rel="noopener">
+        View on Amazon →
+      </a>` : ''}
+    `;
+  }
+
+  // ── Helpers ──────────────────────────────────────────────────────────────────
+  function setStatus(msg, loading) {
+    document.getElementById('statusText').textContent = msg;
+    document.getElementById('spinner').className = 'spinner' + (loading ? ' active' : '');
+  }
+
+  function escHtml(str) {
+    return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+</script>
+</body>
+</html>
