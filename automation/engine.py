@@ -113,10 +113,25 @@ async def _fetch_snapshot(p, sem, markets_ref: list):
             await emit("market_checking", title=p.title[:60],
                        msg=f"Amazon: {p.title[:50]}…")
 
-            snapshot = await build_market_snapshot(
-                supplier_product_id=p.product_id,
-                product_title=p.title,
-            )
+            snapshot = None
+            last_err = None
+            for attempt in range(3):  # up to 3 attempts
+                try:
+                    snapshot = await build_market_snapshot(
+                        supplier_product_id=p.product_id,
+                        product_title=p.title,
+                    )
+                    break
+                except Exception as e:
+                    last_err = e
+                    wait = (attempt + 1) * 3  # 3s, 6s, 9s
+                    logger.warning(f"[Engine] Amazon attempt {attempt+1} failed {p.product_id}: {e} — retrying in {wait}s")
+                    await asyncio.sleep(wait)
+
+            if snapshot is None:
+                await emit("market_error", title=p.title[:60], error=str(last_err)[:80])
+                return None
+
             await upsert_market_snapshot(snapshot)
             markets_ref[0] += 1
 
@@ -128,7 +143,7 @@ async def _fetch_snapshot(p, sem, markets_ref: list):
                        competition=comp, avg_price=avg_p,
                        markets_analyzed=markets_ref[0],
                        msg=f"{comp} · avg ${avg_p}" if avg_p else "fetched")
-            await asyncio.sleep(0.5)  # brief pause to avoid burst rate-limits
+            await asyncio.sleep(1)  # pace calls to avoid session limits
             return snap_dict
 
         except Exception as e:
