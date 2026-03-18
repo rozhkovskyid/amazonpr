@@ -13,7 +13,7 @@ from automation.scheduler import start_scheduler, stop_scheduler
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
-    start_scheduler(interval_minutes=30)
+    start_scheduler(interval_minutes=5)
     yield
     stop_scheduler()
 
