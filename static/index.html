@@ -1264,7 +1264,7 @@
 
     // Amazon section
     let amzSection = '';
-    if (p.amz_competition_level && amzRaw) {
+    if (p.amz_competition_level) {
       const compClass = competitionClass(p.amz_competition_level);
       const weakCompetitors = p.amz_weak_competitors || 0;
       const strongCompetitors = p.amz_strong_competitors || 0;
