@@ -14,16 +14,16 @@ class OpportunityAnalysis(BaseModel):
     # Verdict: strong / average / weak / avoid
     score: str
 
-    # Human-readable analysis fields
-    summary: str
-    margin_assessment: str
-    competition_analysis: str
+    # Human-readable analysis fields (empty for math-only records)
+    summary: str = ""
+    margin_assessment: str = ""
+    competition_analysis: str = ""
     differentiation_ideas: list[str] = []
     risk_flags: list[str] = []
-    final_recommendation: str
+    final_recommendation: str = ""
 
-    # Meta
-    model_used: str = "claude-sonnet-4-6"
+    # "math" = scored by formula only, "claude-*" = AI analysed
+    model_used: str = "math"
     analysed_at: datetime = Field(default_factory=datetime.utcnow)
 
     @property

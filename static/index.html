@@ -269,6 +269,10 @@
       border-left: 3px solid var(--accent); background: rgba(108,99,255,0.06);
     }
     .ai-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .ai-math-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+    .ai-block-row { background: var(--surface2); border-radius: 6px; padding: 6px 10px; display: flex; flex-direction: column; min-width: 90px; }
+    .ai-block-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+    .ai-block-val { font-size: 14px; font-weight: 600; color: var(--accent); margin-top: 2px; }
 
     /* ── Amazon listing rows (clickable) ── */
     .amz-listing-row { cursor: pointer; transition: background 0.15s; }
@@ -1165,21 +1169,29 @@
         </div>`;
     }
 
-    // AI score bar
+    // Score bar — three states
     let aiBar = '';
-    if (p.ai_score) {
+    if (p.ai_score && p.ai_model !== 'math') {
+      // Full AI analysis done
       aiBar = `
         <div class="ai-score-bar">
           <span class="ai-score-pill score-${p.ai_score}">${p.ai_score} opportunity</span>
-          <span style="font-size:11px;color:var(--muted)">AI Analysis ✓</span>
+          <span style="font-size:11px;color:var(--muted)">🤖 AI Verified</span>
+        </div>`;
+    } else if (p.ai_score && p.ai_model === 'math') {
+      // Math-scored, AI available on demand
+      const markup = p.price_low && p.amz_avg_price ? (p.amz_avg_price / p.price_low).toFixed(1) + 'x' : '—';
+      aiBar = `
+        <div class="ai-score-bar">
+          <span class="ai-score-pill score-${p.ai_score}">📐 ${p.ai_score} (math)</span>
+          <button class="btn-ai-analyse" data-pid="${escHtml(p.product_id)}" onclick="handleAiAnalyse(event)">
+            🤖 Get AI Analysis
+          </button>
         </div>`;
     } else if (p.amz_competition_level) {
       aiBar = `
         <div class="ai-score-bar">
-          <span style="font-size:11px;color:var(--muted)">AI not run yet</span>
-          <button class="btn-ai-analyse" data-pid="${escHtml(p.product_id)}" onclick="handleAiAnalyse(event)">
-            Run AI Analysis
-          </button>
+          <span style="font-size:11px;color:var(--muted)">Not scored yet</span>
         </div>`;
     }
 
@@ -1345,40 +1357,51 @@
   }
 
   function buildAiSection(p) {
-    if (!p.ai_score) {
-      if (!p.amz_competition_level) return ''; // no market data yet, don't show
+    if (!p.amz_competition_level) return '';
+
+    // Math-scored: show breakdown + AI button
+    if (!p.ai_score || p.ai_model === 'math') {
+      const score = p.ai_score;
+      const parts = (p.ai_summary || '').split(' ');
+      const mathDetails = parts.map(part => {
+        const [k, v] = part.split('=');
+        if (!v) return '';
+        const labels = { math: 'Score', markup: 'Markup', comp: 'Competition', reviews: 'Avg Reviews', weak: 'Weak Competitors' };
+        return `<div class="ai-block-row"><span class="ai-block-label">${labels[k] || k}</span><span class="ai-block-val">${v}</span></div>`;
+      }).filter(Boolean).join('');
+
       return `
         <div class="ai-section">
           <div class="ai-section-header">
-            <span class="ai-section-title">AI Opportunity Analysis</span>
+            <span class="ai-section-title">📐 Math Score</span>
+            ${score ? `<span class="ai-score-pill score-${score}">${score}</span>` : ''}
           </div>
-          <div style="display:flex;align-items:center;justify-content:space-between">
-            <span style="font-size:13px;color:var(--muted)">Not yet analysed</span>
+          ${mathDetails ? `<div class="ai-math-grid">${mathDetails}</div>` : ''}
+          <div style="margin-top:12px;display:flex;align-items:center;justify-content:space-between;">
+            <span style="font-size:12px;color:var(--muted)">No AI analysis yet — runs on demand</span>
             <button class="btn-ai-analyse" data-pid="${escHtml(p.product_id)}" onclick="handleAiAnalyseModal(event)">
-              Run AI Analysis
+              🤖 Get AI Analysis
             </button>
           </div>
         </div>`;
     }
 
+    // Full AI analysis
     const diffIdeas = (Array.isArray(p.ai_differentiation) ? p.ai_differentiation : [])
       .map(i => `<div class="ai-list-item">${escHtml(i)}</div>`).join('');
-
     const riskFlags = (Array.isArray(p.ai_risks) ? p.ai_risks : [])
       .map(r => `<div class="ai-list-item risk">${escHtml(r)}</div>`).join('');
 
     return `
       <div class="ai-section">
         <div class="ai-section-header">
-          <span class="ai-section-title">AI Opportunity Analysis</span>
+          <span class="ai-section-title">🤖 AI Analysis</span>
           <span class="ai-score-pill score-${p.ai_score}">${p.ai_score} opportunity</span>
         </div>
-
         <div class="ai-summary">${escHtml(p.ai_summary || '')}</div>
-
         <div class="ai-two-col">
           <div>
-            <div class="ai-block-title">Margin Assessment</div>
+            <div class="ai-block-title">Margin</div>
             <div class="ai-block-text">${escHtml(p.ai_margin || '—')}</div>
           </div>
           <div>
@@ -1386,10 +1409,8 @@
             <div class="ai-block-text">${escHtml(p.ai_competition || '—')}</div>
           </div>
         </div>
-
         ${diffIdeas ? `<div><div class="ai-block-title">Differentiation Ideas</div><div class="ai-list">${diffIdeas}</div></div>` : ''}
         ${riskFlags ? `<div><div class="ai-block-title">Risk Flags</div><div class="ai-list">${riskFlags}</div></div>` : ''}
-
         <div>
           <div class="ai-block-title">Recommendation</div>
           <div class="ai-recommendation">${escHtml(p.ai_recommendation || '')}</div>

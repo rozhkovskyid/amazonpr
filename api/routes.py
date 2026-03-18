@@ -244,7 +244,8 @@ async def list_opportunities(limit: int = 50, offset: int = 0):
                 oa.score AS ai_score, oa.summary AS ai_summary,
                 oa.margin_assessment AS ai_margin, oa.competition_analysis AS ai_competition,
                 oa.differentiation_ideas AS ai_differentiation, oa.risk_flags AS ai_risks,
-                oa.final_recommendation AS ai_recommendation, oa.analysed_at AS ai_analysed_at
+                oa.final_recommendation AS ai_recommendation, oa.analysed_at AS ai_analysed_at,
+                oa.model_used AS ai_model
             FROM products p
             JOIN market_snapshots ms ON p.product_id = ms.supplier_product_id
             JOIN opportunity_analyses oa ON p.product_id = oa.product_id

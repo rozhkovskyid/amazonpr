@@ -4,7 +4,6 @@ from datetime import datetime
 
 from ingestion.alibaba_client import fetch_and_normalize
 from ingestion.amazon_client import build_market_snapshot
-from analysis.claude_analyst import analyse_opportunity
 from database.db import (
     upsert_product, log_search, upsert_market_snapshot,
     get_market_snapshot, upsert_opportunity, get_opportunity, get_pool,
@@ -201,46 +200,44 @@ async def run_category_scan(category: str) -> dict:
                 continue
 
             if await get_opportunity(p.product_id):
-                continue  # already analysed
+                continue  # already scored
 
             if math_score >= AI_SCORE_THRESHOLD:
-                await emit("ai_running", title=p.title[:60],
-                           msg=f"AI (math={math_score}): {p.title[:50]}…")
-                try:
-                    analysis = await analyse_opportunity(product_dict, snap)
-                    await upsert_opportunity(analysis)
-                    ai_analyzed += 1
+                # Save math-scored opportunity directly — no AI call
+                from models.opportunity import OpportunityAnalysis
+                opp_score = "strong" if math_score >= 70 else "average"
+                math_opp = OpportunityAnalysis(
+                    product_id=p.product_id,
+                    score=opp_score,
+                    summary=reason,
+                    model_used="math",
+                )
+                await upsert_opportunity(math_opp)
+                ai_analyzed += 1
+                opps_found += 1
 
-                    is_opp = analysis.score in ("strong", "average")
-                    if is_opp:
-                        opps_found += 1
+                await emit("ai_done",
+                           product_id=p.product_id,
+                           title=p.title[:60],
+                           score=opp_score,
+                           math_score=math_score,
+                           is_opportunity=True,
+                           summary=reason,
+                           ai_analyzed=ai_analyzed,
+                           msg=f"MATH {opp_score.upper()} (score {math_score}) · {p.title[:45]}")
 
-                    await emit("ai_done",
-                               product_id=p.product_id,
-                               title=p.title[:60],
-                               score=analysis.score,
-                               math_score=math_score,
-                               is_opportunity=is_opp,
-                               summary=(analysis.summary or "")[:120],
-                               ai_analyzed=ai_analyzed,
-                               msg=f"AI: {analysis.score.upper()} (math {math_score}) · {p.title[:45]}")
-
-                    if is_opp:
-                        await emit("opportunity_found",
-                                   product_id=p.product_id,
-                                   title=p.title[:80],
-                                   score=analysis.score,
-                                   math_score=math_score,
-                                   summary=(analysis.summary or "")[:150],
-                                   price_low=product_dict.get("price_low"),
-                                   avg_price=snap.get("avg_price"),
-                                   category=category)
-                except Exception as e:
-                    await emit("ai_error", title=p.title[:60], error=str(e)[:80])
-                    logger.warning(f"[Engine] AI failed {p.product_id}: {e}")
+                await emit("opportunity_found",
+                           product_id=p.product_id,
+                           title=p.title[:80],
+                           score=opp_score,
+                           math_score=math_score,
+                           summary=reason,
+                           price_low=product_dict.get("price_low"),
+                           avg_price=snap.get("avg_price"),
+                           category=category)
             else:
                 await emit("ai_skipped", title=p.title[:60],
-                           reason=f"watch (math={math_score}) — below AI threshold {AI_SCORE_THRESHOLD}")
+                           reason=f"watch (math={math_score}) — below threshold {AI_SCORE_THRESHOLD}")
 
         await emit("stage", stage="ai", status="done", category=category,
                    count=ai_analyzed,
