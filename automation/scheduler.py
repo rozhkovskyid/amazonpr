@@ -8,7 +8,7 @@ from automation.engine import run_category_scan
 logger = logging.getLogger(__name__)
 
 # How many categories to scan in parallel each tick
-PARALLEL_CATEGORIES = 3
+PARALLEL_CATEGORIES = 2
 
 scheduler      = AsyncIOScheduler()
 _category_index = 0
