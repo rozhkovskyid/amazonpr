@@ -6,3 +6,5 @@ python-dotenv
 anthropic
 asyncpg
 apscheduler
+beautifulsoup4
+lxml

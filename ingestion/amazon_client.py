@@ -66,7 +66,12 @@ def _parse_listing(item: dict) -> AmazonListing:
 
 
 async def search_amazon(query: str, page: int = 1, sort_by: str = "relevance") -> list[AmazonListing]:
-    """Search Amazon and return parsed listings."""
+    """Search Amazon — uses direct scraper if PROXY_URL is set, otherwise omkarcloud API."""
+    import os
+    if os.getenv("PROXY_URL"):
+        from ingestion.amazon_scraper import scrape_amazon_search
+        return await scrape_amazon_search(query, page)
+
     async with httpx.AsyncClient(timeout=30) as client:
         resp = await client.get(
             f"{BASE_URL}/amazon/search",
