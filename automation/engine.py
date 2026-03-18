@@ -14,9 +14,19 @@ logger = logging.getLogger(__name__)
 
 # ── Tuning constants ──────────────────────────────────────────────────────────
 PRODUCTS_PER_CATEGORY = 30   # how many Alibaba products to pull per category
-AMAZON_CONCURRENCY    = 6    # parallel Amazon search calls (semaphore)
+AMAZON_CONCURRENCY    = 4    # global cap on simultaneous Amazon API calls
 AI_SCORE_THRESHOLD    = 58   # math score required to trigger AI analysis
 WATCH_THRESHOLD       = 40   # minimum score worth storing/logging
+
+# Global semaphore — shared across ALL parallel category scans so we never
+# exceed AMAZON_CONCURRENCY total calls regardless of how many categories run.
+_amazon_sem: asyncio.Semaphore = None
+
+def _get_amazon_sem() -> asyncio.Semaphore:
+    global _amazon_sem
+    if _amazon_sem is None:
+        _amazon_sem = asyncio.Semaphore(AMAZON_CONCURRENCY)
+    return _amazon_sem
 
 
 # ── Pure math opportunity scoring ────────────────────────────────────────────
@@ -118,6 +128,7 @@ async def _fetch_snapshot(p, sem, markets_ref: list):
                        competition=comp, avg_price=avg_p,
                        markets_analyzed=markets_ref[0],
                        msg=f"{comp} · avg ${avg_p}" if avg_p else "fetched")
+            await asyncio.sleep(0.5)  # brief pause to avoid burst rate-limits
             return snap_dict
 
         except Exception as e:
@@ -157,7 +168,7 @@ async def run_category_scan(category: str) -> dict:
         await emit("stage", stage="amazon", status="running", category=category,
                    msg=f"Amazon: scanning {len(batch)} products ({AMAZON_CONCURRENCY} parallel)…")
 
-        sem        = asyncio.Semaphore(AMAZON_CONCURRENCY)
+        sem        = _get_amazon_sem()
         mref       = [0]
         snap_dicts = await asyncio.gather(*[_fetch_snapshot(p, sem, mref) for p in batch])
         markets_analyzed = mref[0]
