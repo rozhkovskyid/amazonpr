@@ -20,23 +20,26 @@ AI_ANALYSIS_LIMIT = 5
 
 def _is_viable(product: dict, snapshot: dict) -> bool:
     """Filter products before spending Claude API credits."""
-    # Skip high competition markets
-    if snapshot.get("competition_level") == "high":
-        return False
-
     price_low = product.get("price_low") or 0
     avg_price = snapshot.get("avg_price") or 0
+    competition = snapshot.get("competition_level") or "high"
 
     # Need real price data
     if price_low <= 0 or avg_price <= 0:
         return False
 
-    # Need at least 2.5x markup potential to survive FBA fees
-    if avg_price < price_low * 2.5:
+    # Skip ultra-cheap Amazon items (margins never work after FBA fees)
+    if avg_price < 8:
         return False
 
-    # Skip ultra-cheap items (hard to make margins work on Amazon)
-    if avg_price < 8:
+    markup = avg_price / price_low
+
+    # High competition: only worth Claude's time if markup is exceptional (4x+)
+    if competition == "high" and markup < 4.0:
+        return False
+
+    # Medium/low competition: standard 2.5x minimum
+    if competition != "high" and markup < 2.5:
         return False
 
     return True
@@ -88,6 +91,10 @@ async def run_category_scan(category: str) -> dict:
         logger.info(f"[Automation] [{category}] {markets_analyzed} market snapshots done")
 
         # ── Step 3: AI opportunity analysis (viable products only) ──────
+        # Fetch DB rows — they have price_low reliably stored (Pydantic objects may lack it without fetch_details)
+        from database.db import get_products
+        db_products = {r["product_id"]: r for r in await get_products(query=category, limit=MARKET_ANALYSIS_LIMIT)}
+
         viable_analyzed = 0
         for p in products[:MARKET_ANALYSIS_LIMIT]:
             if viable_analyzed >= AI_ANALYSIS_LIMIT:
@@ -100,13 +107,15 @@ async def run_category_scan(category: str) -> dict:
                 if not snapshot:
                     continue
 
+                # Use DB row for reliable price data
+                db_row = db_products.get(p.product_id, {})
                 product_dict = {
                     "product_id": p.product_id,
                     "title": p.title,
-                    "price_range": p.pricing.range_formatted,
-                    "price_low": p.pricing.lowest_unit_price,
-                    "moq": p.pricing.minimum_order_qty,
-                    "moq_unit": p.pricing.minimum_order_unit,
+                    "price_range": db_row.get("price_range") or p.pricing.range_formatted,
+                    "price_low": db_row.get("price_low") or p.pricing.lowest_unit_price,
+                    "moq": db_row.get("moq") or p.pricing.minimum_order_qty,
+                    "moq_unit": db_row.get("moq_unit") or p.pricing.minimum_order_unit,
                     "supplier_name": p.supplier.name,
                     "supplier_country": p.supplier.country,
                     "is_gold_supplier": int(p.supplier.is_gold_supplier),
