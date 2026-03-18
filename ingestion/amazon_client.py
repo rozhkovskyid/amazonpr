@@ -16,29 +16,61 @@ def _get_api_key() -> str:
 
 def _clean_search_query(title: str) -> str:
     """
-    Convert a verbose Alibaba product title into a clean Amazon search query.
-    Alibaba titles are keyword-stuffed. We strip filler and keep the core product.
-    e.g. "High Quality OEM Custom Logo Stainless Steel Kitchen Spatula Cooking Turner"
-      -> "Stainless Steel Kitchen Spatula"
+    Convert a verbose Alibaba product title into a tight Amazon search query.
+    Strips brand names, model numbers, marketing filler, colors, specs, and
+    duplicate words — leaving just the core product noun phrase.
     """
-    # Remove common Alibaba filler phrases
-    filler = [
-        r'\bOEM\b', r'\bODM\b', r'\bcustom\b', r'\bcustomize\b', r'\bcustomized\b',
-        r'\blogo\b', r'\bhigh quality\b', r'\bhot sale\b', r'\bhot selling\b',
-        r'\bbest price\b', r'\bfactory\b', r'\bwholesale\b', r'\bmanufacturer\b',
-        r'\bsupplier\b', r'\bwith logo\b', r'\bprice\b', r'\bcheap\b',
-        r'\bfree sample\b', r'\bsample\b', r'\bin stock\b', r'\bfast delivery\b',
-    ]
     query = title
+
+    # 1. Remove all-caps words 2+ chars (brand names: SNOWMAN, OEM, LXZ, RGB)
+    query = re.sub(r'\b[A-Z]{2,}\b', '', query)
+
+    # 2. Remove model numbers and years: CS015, B07X, 2024, XR-500
+    query = re.sub(r'\b[A-Z]{1,4}[-]?\d{2,}[A-Z0-9]*\b', '', query)
+    query = re.sub(r'\b\d{2,}[A-Z]{1,4}\b', '', query)
+    query = re.sub(r'\b(19|20)\d{2}\b', '', query)  # years like 2024
+
+    # 2. Remove slash-separated specs: ATX/M-ATX/Mini-ITX, RGB/ARGB, etc.
+    query = re.sub(r'\b\w+(?:/\w+)+\b', '', query)
+
+    # 3. Remove Alibaba marketing filler
+    filler = [
+        r'\bOEM\b', r'\bODM\b', r'\bcustom(ize[sd]?)?\b', r'\blogo\b',
+        r'\bhigh[- ]quality\b', r'\bhot[- ]sel{1,2}ing\b', r'\bhot[- ]sale\b',
+        r'\bbest[- ]price\b', r'\bfactory\b', r'\bwholesale\b',
+        r'\bmanufacturer\b', r'\bsupplier\b', r'\bcheap\b', r'\bprice\b',
+        r'\bfree[- ]sample\b', r'\bsample\b', r'\bin[- ]stock\b',
+        r'\bfast[- ]delivery\b', r'\bunique[- ]design\b', r'\bnew[- ]design\b',
+        r'\bnew[- ]arrival\b', r'\bnew[- ]product\b', r'\bbulk\b',
+        r'\bprofessional\b', r'\bcommercial\b', r'\bpremium\b', r'\bluxury\b',
+        r'\bportable\b(?= .*\bportable\b)',  # only remove duplicate
+    ]
     for pattern in filler:
         query = re.sub(pattern, '', query, flags=re.IGNORECASE)
 
-    # Remove extra whitespace
+    # 4. Remove standalone colors
+    colors = r'\b(black|white|silver|gold|red|blue|green|pink|grey|gray|clear|transparent)\b'
+    query = re.sub(colors, '', query, flags=re.IGNORECASE)
+
+    # 5. Remove punctuation clutter (keep letters, digits, spaces)
+    query = re.sub(r'[^\w\s]', ' ', query)
+
+    # 6. Collapse whitespace
     query = ' '.join(query.split())
 
-    # Truncate to ~60 chars at a word boundary to keep it focused
-    if len(query) > 60:
-        query = query[:60].rsplit(' ', 1)[0]
+    # 7. Remove duplicate consecutive words (Case Case → Case)
+    query = re.sub(r'\b(\w+)( \1)+\b', r'\1', query, flags=re.IGNORECASE)
+
+    # 8. Remove orphaned single letters (leftovers from spec stripping: "M", "C")
+    query = re.sub(r'\b[A-Za-z]\b', '', query)
+    query = ' '.join(query.split())
+
+    # 9. Strip trailing stop-words
+    query = re.sub(r'\b(for|with|the|an?|and|or|of|in|to|from|by)\s*$', '', query, flags=re.IGNORECASE).strip()
+
+    # 10. Trim to ~50 chars at word boundary for a focused query
+    if len(query) > 50:
+        query = query[:50].rsplit(' ', 1)[0]
 
     return query.strip()
 
