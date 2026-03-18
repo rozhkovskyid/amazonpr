@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, BackgroundTasks
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from ingestion.alibaba_client import fetch_and_normalize
 from ingestion.amazon_client import build_market_snapshot
@@ -177,6 +178,34 @@ async def list_searches():
 async def automation_status():
     from automation.scheduler import get_status
     return get_status()
+
+
+@router.get("/api/automation/stream")
+async def automation_stream():
+    """SSE stream of real-time automation events."""
+    import asyncio
+    from automation.events import subscribe, unsubscribe
+
+    q = subscribe()
+
+    async def generator():
+        try:
+            while True:
+                try:
+                    payload = await asyncio.wait_for(q.get(), timeout=20)
+                    yield f"data: {payload}\n\n"
+                except asyncio.TimeoutError:
+                    yield "data: {\"type\":\"ping\"}\n\n"
+        except asyncio.CancelledError:
+            pass
+        finally:
+            unsubscribe(q)
+
+    return StreamingResponse(
+        generator(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 @router.post("/api/automation/start")

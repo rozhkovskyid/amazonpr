@@ -325,6 +325,90 @@
     }
     .amz-open-btn:hover { opacity: 0.88; }
     .amz-spinner { text-align: center; padding: 40px; color: var(--muted); font-size: 13px; }
+
+    /* ── Live Dashboard ── */
+    .live-layout { display: flex; flex: 1; overflow: hidden; }
+
+    /* Pipeline */
+    .pipeline-panel {
+      width: 300px; min-width: 300px; border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; gap: 0; overflow-y: auto; background: var(--surface);
+    }
+    .pipeline-section { padding: 16px; border-bottom: 1px solid var(--border); }
+    .pipeline-section-title { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 12px; }
+
+    .stat-counter { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .stat-box { background: var(--bg); border-radius: 8px; padding: 10px; text-align: center; }
+    .stat-box .num { font-size: 24px; font-weight: 800; line-height: 1; }
+    .stat-box .lbl { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 3px; }
+
+    .stage-row {
+      display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+      border-radius: 8px; margin-bottom: 6px; background: var(--bg);
+      transition: background 0.3s;
+    }
+    .stage-row.active { background: rgba(108,99,255,0.08); border: 1px solid rgba(108,99,255,0.2); }
+    .stage-row.done { background: rgba(34,197,94,0.05); border: 1px solid rgba(34,197,94,0.15); }
+    .stage-icon { font-size: 18px; flex-shrink: 0; }
+    .stage-info { flex: 1; min-width: 0; }
+    .stage-name { font-size: 12px; font-weight: 600; color: var(--text); }
+    .stage-detail { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+    .stage-badge { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 8px; flex-shrink: 0; }
+    .stage-badge.waiting { background: var(--surface2); color: var(--muted); }
+    .stage-badge.running { background: rgba(108,99,255,0.2); color: var(--accent); }
+    .stage-badge.done { background: rgba(34,197,94,0.15); color: var(--green); }
+
+    .current-cat-box {
+      background: var(--bg); border-radius: 8px; padding: 10px 12px;
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    .current-cat-label { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    .current-cat-name { font-size: 13px; font-weight: 600; color: var(--accent); }
+
+    /* Activity feed */
+    .feed-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    .feed-header {
+      padding: 12px 16px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 8px; background: var(--surface);
+    }
+    .feed-title { font-size: 13px; font-weight: 600; flex: 1; }
+    .feed-scroll { flex: 1; overflow-y: auto; padding: 8px 12px; display: flex; flex-direction: column-reverse; }
+    .feed-list { display: flex; flex-direction: column; gap: 3px; }
+
+    .feed-item {
+      display: flex; align-items: flex-start; gap: 8px;
+      padding: 6px 8px; border-radius: 6px; font-size: 12px;
+      animation: fadeSlide 0.25s ease;
+      border-left: 2px solid transparent;
+    }
+    @keyframes fadeSlide { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+    .feed-item.alibaba { border-left-color: #38bdf8; background: rgba(56,189,248,0.04); }
+    .feed-item.amazon  { border-left-color: var(--orange); background: rgba(249,115,22,0.04); }
+    .feed-item.ai      { border-left-color: var(--accent); background: rgba(108,99,255,0.06); }
+    .feed-item.opportunity { border-left-color: var(--green); background: rgba(34,197,94,0.08); }
+    .feed-item.error   { border-left-color: var(--red); background: rgba(239,68,68,0.05); }
+    .feed-item.system  { border-left-color: var(--border); }
+    .feed-icon { font-size: 13px; flex-shrink: 0; margin-top: 1px; }
+    .feed-text { flex: 1; color: var(--text); line-height: 1.4; }
+    .feed-text .dim { color: var(--muted); }
+    .feed-time { font-size: 10px; color: var(--muted); flex-shrink: 0; margin-top: 2px; }
+
+    /* Opportunity toast */
+    .opp-toast {
+      position: fixed; bottom: 24px; right: 24px; z-index: 999;
+      background: var(--surface); border: 1px solid var(--green);
+      border-radius: 12px; padding: 14px 18px; max-width: 340px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      animation: toastIn 0.35s cubic-bezier(0.34,1.56,0.64,1);
+      display: flex; gap: 12px; align-items: flex-start;
+    }
+    @keyframes toastIn { from { opacity: 0; transform: translateY(20px) scale(0.95); } to { opacity: 1; transform: none; } }
+    .opp-toast-icon { font-size: 22px; flex-shrink: 0; }
+    .opp-toast-body { flex: 1; min-width: 0; }
+    .opp-toast-label { font-size: 10px; font-weight: 700; color: var(--green); text-transform: uppercase; letter-spacing: 0.6px; }
+    .opp-toast-title { font-size: 13px; font-weight: 600; color: var(--text); margin-top: 2px; line-height: 1.3; }
+    .opp-toast-score { display: inline-block; margin-top: 4px; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 8px; }
+    .opp-toast-close { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; padding: 0; flex-shrink: 0; }
   </style>
 </head>
 <body>
@@ -398,6 +482,9 @@
       <button class="tab-btn" id="tabOpportunities" onclick="switchTab('opportunities')" style="padding:12px 18px;background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">
         Opportunities <span id="oppCount" style="background:var(--accent);color:#fff;font-size:10px;padding:1px 6px;border-radius:8px;margin-left:4px;display:none;"></span>
       </button>
+      <button class="tab-btn" id="tabLive" onclick="switchTab('live')" style="padding:12px 18px;background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">
+        ⚡ Live <span id="liveDot" style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--muted);margin-left:5px;vertical-align:middle;"></span>
+      </button>
     </div>
 
     <!-- Search tab -->
@@ -425,6 +512,80 @@
 
     <div id="results"></div>
     </div><!-- end searchTab -->
+
+    <!-- Live tab -->
+    <div id="liveTab" style="display:none;flex:1;overflow:hidden;">
+      <div class="live-layout">
+
+        <!-- Left: pipeline + stats -->
+        <div class="pipeline-panel">
+          <div class="pipeline-section">
+            <div class="pipeline-section-title">Session Stats</div>
+            <div class="stat-counter">
+              <div class="stat-box"><div class="num" id="lsProducts" style="color:var(--text);">0</div><div class="lbl">Products</div></div>
+              <div class="stat-box"><div class="num" id="lsMarkets" style="color:var(--orange);">0</div><div class="lbl">Markets</div></div>
+              <div class="stat-box"><div class="num" id="lsAI" style="color:var(--accent);">0</div><div class="lbl">AI Runs</div></div>
+              <div class="stat-box"><div class="num" id="lsOpps" style="color:var(--green);">0</div><div class="lbl">Opportunities</div></div>
+            </div>
+          </div>
+
+          <div class="pipeline-section">
+            <div class="pipeline-section-title">Current Scan</div>
+            <div class="current-cat-box" id="currentCatBox">
+              <div class="current-cat-label">Category</div>
+              <div class="current-cat-name" id="currentCatName">Waiting…</div>
+            </div>
+          </div>
+
+          <div class="pipeline-section">
+            <div class="pipeline-section-title">Pipeline</div>
+            <div id="stageAlibaba" class="stage-row">
+              <div class="stage-icon">🏭</div>
+              <div class="stage-info">
+                <div class="stage-name">Alibaba</div>
+                <div class="stage-detail" id="stageAlibabaDetail">Supplier search</div>
+              </div>
+              <div class="stage-badge waiting" id="stageAlibabaBadge">—</div>
+            </div>
+            <div id="stageAmazon" class="stage-row">
+              <div class="stage-icon">🛒</div>
+              <div class="stage-info">
+                <div class="stage-name">Amazon</div>
+                <div class="stage-detail" id="stageAmazonDetail">Market analysis</div>
+              </div>
+              <div class="stage-badge waiting" id="stageAmazonBadge">—</div>
+            </div>
+            <div id="stageAI" class="stage-row">
+              <div class="stage-icon">🤖</div>
+              <div class="stage-info">
+                <div class="stage-name">Claude AI</div>
+                <div class="stage-detail" id="stageAIDetail">Opportunity scoring</div>
+              </div>
+              <div class="stage-badge waiting" id="stageAIBadge">—</div>
+            </div>
+          </div>
+
+          <div class="pipeline-section" style="flex:1;">
+            <div class="pipeline-section-title">Automation</div>
+            <div style="display:flex;flex-direction:column;gap:6px;" id="liveAutoRecent">
+              <div style="font-size:11px;color:var(--muted);">No scans yet this session.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: activity feed -->
+        <div class="feed-panel">
+          <div class="feed-header">
+            <div class="feed-title">Activity Feed</div>
+            <div id="feedStatus" style="font-size:11px;color:var(--muted);">Connecting…</div>
+            <button onclick="clearFeed()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:11px;padding:2px 6px;border-radius:4px;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Clear</button>
+          </div>
+          <div class="feed-scroll" id="feedScroll">
+            <div class="feed-list" id="feedList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- Opportunities tab -->
     <div id="opportunitiesTab" style="display:none;flex-direction:column;flex:1;">
@@ -460,6 +621,8 @@
   let allProducts = [];
   let analysingIds = new Set();
   let currentTab = 'search';
+  let _sse = null;
+  let _lsProducts = 0, _lsMarkets = 0, _lsAI = 0, _lsOpps = 0;
 
   document.addEventListener('DOMContentLoaded', () => {
     loadSearchHistory();
@@ -478,15 +641,189 @@
   // ── Tabs ─────────────────────────────────────────────────────────────────────
   function switchTab(tab) {
     currentTab = tab;
-    const isSearch = tab === 'search';
-    document.getElementById('searchTab').style.display = isSearch ? 'flex' : 'none';
-    document.getElementById('searchTab').style.flexDirection = 'column';
-    document.getElementById('opportunitiesTab').style.display = isSearch ? 'none' : 'flex';
-    document.getElementById('tabSearch').style.borderBottomColor = isSearch ? 'var(--accent)' : 'transparent';
-    document.getElementById('tabSearch').style.color = isSearch ? 'var(--text)' : 'var(--muted)';
-    document.getElementById('tabOpportunities').style.borderBottomColor = isSearch ? 'transparent' : 'var(--accent)';
-    document.getElementById('tabOpportunities').style.color = isSearch ? 'var(--muted)' : 'var(--text)';
+    const tabs = ['search', 'opportunities', 'live'];
+    tabs.forEach(t => {
+      const btn = document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1));
+      const panel = document.getElementById(t + 'Tab');
+      const active = t === tab;
+      if (btn) { btn.style.borderBottomColor = active ? 'var(--accent)' : 'transparent'; btn.style.color = active ? 'var(--text)' : 'var(--muted)'; }
+      if (panel) { panel.style.display = active ? 'flex' : 'none'; if (active && t !== 'live') panel.style.flexDirection = 'column'; }
+    });
     if (tab === 'opportunities') loadOpportunities();
+    if (tab === 'live') connectSSE();
+  }
+
+  // ── SSE Live feed ────────────────────────────────────────────────────────────
+  function connectSSE() {
+    if (_sse && _sse.readyState !== 2) return; // already open
+    _sse = new EventSource('/api/automation/stream');
+    document.getElementById('feedStatus').textContent = 'Connecting…';
+    document.getElementById('feedStatus').style.color = 'var(--muted)';
+
+    _sse.onopen = () => {
+      document.getElementById('feedStatus').textContent = '● Live';
+      document.getElementById('feedStatus').style.color = 'var(--green)';
+      document.getElementById('liveDot').style.background = 'var(--green)';
+      document.getElementById('liveDot').style.boxShadow = '0 0 5px var(--green)';
+      addFeedItem('system', '🔗', 'Connected to live automation stream');
+    };
+
+    _sse.onerror = () => {
+      document.getElementById('feedStatus').textContent = '⚠ Reconnecting…';
+      document.getElementById('feedStatus').style.color = 'var(--yellow)';
+      document.getElementById('liveDot').style.background = 'var(--yellow)';
+    };
+
+    _sse.onmessage = (e) => {
+      try {
+        const ev = JSON.parse(e.data);
+        handleLiveEvent(ev);
+      } catch {}
+    };
+  }
+
+  function handleLiveEvent(ev) {
+    const t = ev.type;
+    const time = ev.time ? new Date(ev.time).toLocaleTimeString() : '';
+
+    if (t === 'ping') return;
+
+    if (t === 'scan_started') {
+      resetPipeline();
+      document.getElementById('currentCatName').textContent = ev.category;
+      addFeedItem('system', '🚀', `<b>New scan started:</b> <span class="dim">${escHtml(ev.category)}</span>`, time);
+    }
+
+    if (t === 'stage') {
+      const stageMap = { alibaba: 'Alibaba', amazon: 'Amazon', ai: 'AI' };
+      const stageEl = document.getElementById('stage' + stageMap[ev.stage]);
+      const badgeEl = document.getElementById('stage' + stageMap[ev.stage] + 'Badge');
+      const detailEl = document.getElementById('stage' + stageMap[ev.stage] + 'Detail');
+      if (!stageEl) return;
+      stageEl.className = 'stage-row ' + (ev.status === 'running' ? 'active' : ev.status === 'done' ? 'done' : '');
+      badgeEl.className = 'stage-badge ' + ev.status;
+      badgeEl.textContent = ev.status === 'running' ? '▶' : ev.status === 'done' ? `✓ ${ev.count ?? ''}` : '—';
+      if (detailEl && ev.msg) detailEl.textContent = ev.msg;
+      const cls = ev.stage === 'alibaba' ? 'alibaba' : ev.stage === 'amazon' ? 'amazon' : 'ai';
+      const icon = ev.stage === 'alibaba' ? '🏭' : ev.stage === 'amazon' ? '🛒' : '🤖';
+      if (ev.status === 'running') addFeedItem(cls, icon, escHtml(ev.msg || ''), time);
+      if (ev.status === 'done') addFeedItem(cls, '✅', escHtml(ev.msg || ''), time);
+    }
+
+    if (t === 'market_checking') {
+      addFeedItem('amazon', '🔍', `<span class="dim">Amazon:</span> ${escHtml(ev.title || '')}`, time);
+    }
+
+    if (t === 'market_done' && !ev.cached) {
+      const compColor = ev.competition === 'low' ? 'var(--green)' : ev.competition === 'medium' ? 'var(--yellow)' : 'var(--red)';
+      addFeedItem('amazon', '🛒', `<span style="color:${compColor};font-weight:600;">${ev.competition || '?'}</span> · $${ev.avg_price} avg · ${escHtml(ev.title || '')}`, time);
+      _lsMarkets++;
+      document.getElementById('lsMarkets').textContent = _lsMarkets;
+      animateNum('lsMarkets');
+    }
+
+    if (t === 'products_found' || t === 'stage' && ev.stage === 'alibaba' && ev.status === 'done') {
+      if (ev.count) { _lsProducts += ev.count; document.getElementById('lsProducts').textContent = _lsProducts; animateNum('lsProducts'); }
+    }
+
+    if (t === 'ai_skipped') {
+      addFeedItem('ai', '⏭', `<span class="dim">Skipped:</span> ${escHtml(ev.reason || '')} — ${escHtml(ev.title || '')}`, time);
+    }
+
+    if (t === 'ai_running') {
+      addFeedItem('ai', '🤖', `<b>Claude analysing:</b> ${escHtml(ev.title || '')}`, time);
+    }
+
+    if (t === 'ai_done') {
+      const scoreColor = { strong: 'var(--green)', average: 'var(--yellow)', weak: 'var(--orange)', avoid: 'var(--red)' }[ev.score] || 'var(--muted)';
+      addFeedItem('ai', ev.is_opportunity ? '⭐' : '📊',
+        `<span style="color:${scoreColor};font-weight:700;">${(ev.score||'').toUpperCase()}</span> · ${escHtml(ev.title || '')}`, time);
+      _lsAI++;
+      document.getElementById('lsAI').textContent = _lsAI;
+      animateNum('lsAI');
+    }
+
+    if (t === 'opportunity_found') {
+      _lsOpps++;
+      document.getElementById('lsOpps').textContent = _lsOpps;
+      animateNum('lsOpps');
+      addFeedItem('opportunity', '💎',
+        `<b style="color:var(--green);">OPPORTUNITY</b> · <span style="color:var(--accent);font-weight:600;">${(ev.score||'').toUpperCase()}</span> · ${escHtml(ev.title || '')}`, time);
+      showOpportunityToast(ev);
+      loadOpportunities();
+      const oppCount = document.getElementById('oppCount');
+      oppCount.style.display = 'inline';
+      oppCount.textContent = parseInt(oppCount.textContent || '0') + 1;
+    }
+
+    if (t === 'scan_completed') {
+      addFeedItem('system', '🏁',
+        `<b>Scan complete</b> · ${ev.products_found}p · ${ev.markets_analyzed}m · ${ev.ai_analyzed} AI · <span class="dim">${escHtml(ev.category || '')}</span>`, time);
+      updateLiveAutoRecent();
+    }
+
+    if (t === 'scan_error' || t === 'market_error' || t === 'ai_error') {
+      addFeedItem('error', '⚠', escHtml(ev.error || ev.msg || 'Error'), time);
+    }
+  }
+
+  function addFeedItem(cls, icon, html, time) {
+    const list = document.getElementById('feedList');
+    const item = document.createElement('div');
+    item.className = `feed-item ${cls}`;
+    item.innerHTML = `<div class="feed-icon">${icon}</div><div class="feed-text">${html}</div>${time ? `<div class="feed-time">${time}</div>` : ''}`;
+    list.insertBefore(item, list.firstChild);
+    // Keep max 200 items
+    while (list.children.length > 200) list.removeChild(list.lastChild);
+  }
+
+  function clearFeed() { document.getElementById('feedList').innerHTML = ''; }
+
+  function resetPipeline() {
+    ['Alibaba','Amazon','AI'].forEach(s => {
+      const el = document.getElementById('stage' + s);
+      const badge = document.getElementById('stage' + s + 'Badge');
+      if (el) el.className = 'stage-row';
+      if (badge) { badge.className = 'stage-badge waiting'; badge.textContent = '—'; }
+    });
+  }
+
+  function animateNum(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.style.transform = 'scale(1.3)';
+    el.style.transition = 'transform 0.15s';
+    setTimeout(() => { el.style.transform = 'scale(1)'; }, 150);
+  }
+
+  function showOpportunityToast(ev) {
+    const existing = document.querySelectorAll('.opp-toast');
+    existing.forEach(t => t.remove());
+    const scoreColor = ev.score === 'strong' ? 'var(--green)' : 'var(--yellow)';
+    const toast = document.createElement('div');
+    toast.className = 'opp-toast';
+    toast.innerHTML = `
+      <div class="opp-toast-icon">💎</div>
+      <div class="opp-toast-body">
+        <div class="opp-toast-label">New Opportunity Found</div>
+        <div class="opp-toast-title">${escHtml((ev.title||'').substring(0,70))}</div>
+        <span class="opp-toast-score score-${ev.score}">${(ev.score||'').toUpperCase()}</span>
+      </div>
+      <button class="opp-toast-close" onclick="this.closest('.opp-toast').remove()">×</button>`;
+    document.body.appendChild(toast);
+    setTimeout(() => { if (toast.parentNode) toast.remove(); }, 8000);
+  }
+
+  function updateLiveAutoRecent() {
+    fetch('/api/automation/status').then(r => r.json()).then(s => {
+      const el = document.getElementById('liveAutoRecent');
+      const rows = (s.recent_runs || []).slice(0, 5).map(r =>
+        `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border);font-size:11px;">
+          <span style="color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px;">${escHtml(r.category)}</span>
+          <span style="color:${r.ai_analyzed > 0 ? 'var(--green)' : 'var(--muted)'};flex-shrink:0;margin-left:6px;">AI:${r.ai_analyzed}</span>
+        </div>`).join('');
+      el.innerHTML = rows || '<div style="font-size:11px;color:var(--muted);">No scans yet.</div>';
+    }).catch(() => {});
   }
 
   // ── Automation status ────────────────────────────────────────────────────────
