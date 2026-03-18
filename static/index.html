@@ -342,10 +342,46 @@
   <aside class="sidebar">
     <div>
       <div class="sidebar-label">Automation</div>
-      <div id="autoPanel" style="display:flex;flex-direction:column;gap:8px;font-size:12px;">
-        <div style="color:var(--muted);">Loading…</div>
+
+      <!-- Toggle row -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <span style="font-size:12px;color:var(--muted);" id="autoToggleLabel">Loading…</span>
+        <label style="position:relative;display:inline-block;width:36px;height:20px;cursor:pointer;">
+          <input type="checkbox" id="autoToggle" onchange="toggleAutomation(this.checked)" style="opacity:0;width:0;height:0;">
+          <span id="autoToggleTrack" style="position:absolute;inset:0;border-radius:20px;background:var(--border);transition:background 0.2s;"></span>
+          <span id="autoToggleThumb" style="position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:#fff;transition:transform 0.2s;"></span>
+        </label>
       </div>
-      <button class="btn btn-secondary" id="triggerBtn" onclick="triggerScan()" style="width:100%;margin-top:10px;font-size:12px;padding:7px 10px;">
+
+      <!-- Live scan progress -->
+      <div id="scanProgress" style="display:none;background:var(--surface2);border-radius:8px;padding:10px;margin-bottom:10px;">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+          <div class="spinner active" style="display:block;"></div>
+          <span style="font-size:11px;font-weight:600;color:var(--accent);">Scanning…</span>
+        </div>
+        <div style="font-size:11px;color:var(--text);margin-bottom:4px;" id="scanCategory">—</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-top:6px;">
+          <div style="text-align:center;background:var(--bg);border-radius:4px;padding:4px;">
+            <div style="font-size:16px;font-weight:700;color:var(--text);" id="scanProducts">—</div>
+            <div style="font-size:9px;color:var(--muted);text-transform:uppercase;">Products</div>
+          </div>
+          <div style="text-align:center;background:var(--bg);border-radius:4px;padding:4px;">
+            <div style="font-size:16px;font-weight:700;color:var(--orange);" id="scanMarkets">—</div>
+            <div style="font-size:9px;color:var(--muted);text-transform:uppercase;">Markets</div>
+          </div>
+          <div style="text-align:center;background:var(--bg);border-radius:4px;padding:4px;">
+            <div style="font-size:16px;font-weight:700;color:var(--accent);" id="scanAI">—</div>
+            <div style="font-size:9px;color:var(--muted);text-transform:uppercase;">AI</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent runs -->
+      <div id="autoPanel" style="display:flex;flex-direction:column;gap:4px;font-size:12px;margin-bottom:10px;">
+        <div style="color:var(--muted);font-size:11px;">No scans yet.</div>
+      </div>
+
+      <button class="btn btn-secondary" id="triggerBtn" onclick="triggerScan()" style="width:100%;font-size:12px;padding:7px 10px;">
         ▶ Scan Now
       </button>
     </div>
@@ -429,7 +465,10 @@
     loadSearchHistory();
     loadAutomationStatus();
     loadOpportunities();
-    setInterval(loadAutomationStatus, 30000);
+    setInterval(() => {
+      loadAutomationStatus();
+      // Poll faster while scanning
+    }, 5000);
     setInterval(() => { if (currentTab === 'opportunities') loadOpportunities(); }, 60000);
     document.getElementById('queryInput').addEventListener('keydown', e => {
       if (e.key === 'Enter') runSearch();
@@ -451,53 +490,83 @@
   }
 
   // ── Automation status ────────────────────────────────────────────────────────
+  let _lastScanningState = false;
+
   async function loadAutomationStatus() {
     try {
       const res = await fetch('/api/automation/status');
       const s = await res.json();
       renderAutomationPanel(s);
+      // If scan just finished, refresh opportunities
+      if (_lastScanningState && !s.is_scanning) loadOpportunities();
+      _lastScanningState = s.is_scanning;
     } catch { }
   }
 
   function renderAutomationPanel(s) {
+    // Header dot + label
     const dot = document.getElementById('autoStatusDot');
     const label = document.getElementById('autoStatusLabel');
     if (s.is_scanning) {
-      dot.style.background = 'var(--yellow)';
-      dot.style.boxShadow = '0 0 6px var(--yellow)';
+      dot.style.background = 'var(--yellow)'; dot.style.boxShadow = '0 0 6px var(--yellow)';
       label.textContent = 'Scanning…';
     } else if (s.running) {
-      dot.style.background = 'var(--green)';
-      dot.style.boxShadow = '0 0 6px var(--green)';
-      const next = s.next_run ? timeUntil(s.next_run) : '—';
-      label.textContent = `Next scan ${next}`;
+      dot.style.background = 'var(--green)'; dot.style.boxShadow = '0 0 6px var(--green)';
+      label.textContent = `Next scan ${s.next_run ? timeUntil(s.next_run) : '—'}`;
     } else {
-      dot.style.background = 'var(--red)';
-      dot.style.boxShadow = 'none';
-      label.textContent = 'Scheduler offline';
+      dot.style.background = 'var(--muted)'; dot.style.boxShadow = 'none';
+      label.textContent = 'Automation paused';
     }
 
-    const panel = document.getElementById('autoPanel');
-    const lastRun = s.last_run;
-    const recentRows = (s.recent_runs || []).slice(0, 5).map(r => `
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--border);">
-        <span style="color:var(--text);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:130px;" title="${escHtml(r.category)}">${escHtml(r.category)}</span>
-        <span style="color:var(--muted);font-size:10px;flex-shrink:0;margin-left:6px;">P:${r.products_found} AI:${r.ai_analyzed}</span>
-      </div>`).join('');
+    // Toggle state
+    const toggle = document.getElementById('autoToggle');
+    const track = document.getElementById('autoToggleTrack');
+    const thumb = document.getElementById('autoToggleThumb');
+    const toggleLabel = document.getElementById('autoToggleLabel');
+    const on = s.running;
+    toggle.checked = on;
+    track.style.background = on ? 'var(--accent)' : 'var(--border)';
+    thumb.style.transform = on ? 'translateX(16px)' : 'translateX(0)';
+    toggleLabel.textContent = on ? 'Auto-scan ON' : 'Auto-scan OFF';
+    toggleLabel.style.color = on ? 'var(--green)' : 'var(--muted)';
 
-    panel.innerHTML = `
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-        <div style="background:var(--surface2);border-radius:6px;padding:8px;">
-          <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px;">Next category</div>
-          <div style="font-size:11px;color:var(--text);font-weight:600;">${escHtml(s.next_category || '—')}</div>
-        </div>
-        <div style="background:var(--surface2);border-radius:6px;padding:8px;">
-          <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px;">Scanned</div>
-          <div style="font-size:11px;color:var(--text);font-weight:600;">${s.category_index || 0} / ${s.categories_total || 0}</div>
-        </div>
-      </div>
-      ${recentRows ? `<div style="margin-top:4px;">${recentRows}</div>` : '<div style="color:var(--muted);font-size:11px;">No scans yet.</div>'}
-    `;
+    // Live scan progress box
+    const prog = document.getElementById('scanProgress');
+    if (s.is_scanning) {
+      prog.style.display = 'block';
+      document.getElementById('scanCategory').textContent = s.recent_runs?.[0]?.category || s.next_category || '…';
+      document.getElementById('scanProducts').textContent = s.last_run?.products_found ?? '…';
+      document.getElementById('scanMarkets').textContent = s.last_run?.markets_analyzed ?? '…';
+      document.getElementById('scanAI').textContent = s.last_run?.ai_analyzed ?? '…';
+    } else {
+      prog.style.display = 'none';
+      if (s.last_run) {
+        document.getElementById('scanCategory').textContent = s.last_run.category;
+        document.getElementById('scanProducts').textContent = s.last_run.products_found;
+        document.getElementById('scanMarkets').textContent = s.last_run.markets_analyzed;
+        document.getElementById('scanAI').textContent = s.last_run.ai_analyzed;
+      }
+    }
+
+    // Recent runs list
+    const panel = document.getElementById('autoPanel');
+    const rows = (s.recent_runs || []).slice(0, 6).map(r => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);">
+        <span style="color:var(--text);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px;" title="${escHtml(r.category)}">${escHtml(r.category)}</span>
+        <span style="display:flex;gap:6px;flex-shrink:0;margin-left:4px;">
+          <span style="font-size:10px;color:var(--muted);">P:${r.products_found}</span>
+          <span style="font-size:10px;color:var(--orange);">M:${r.markets_analyzed}</span>
+          <span style="font-size:10px;color:${r.ai_analyzed > 0 ? 'var(--green)' : 'var(--muted)'};">AI:${r.ai_analyzed}</span>
+        </span>
+      </div>`).join('');
+    panel.innerHTML = rows || '<div style="color:var(--muted);font-size:11px;">No scans yet.</div>';
+  }
+
+  async function toggleAutomation(enabled) {
+    try {
+      await fetch(`/api/automation/${enabled ? 'start' : 'pause'}`, { method: 'POST' });
+      await loadAutomationStatus();
+    } catch { }
   }
 
   function timeUntil(isoString) {
@@ -551,7 +620,7 @@
     const strong = opps.filter(o => o.ai_score === 'strong').length;
     const avg = opps.filter(o => o.ai_score === 'average').length;
     status.textContent = `${opps.length} opportunities found · ${strong} strong · ${avg} average`;
-    grid.innerHTML = opps.map(p => buildCard(p)).join('');
+    grid.innerHTML = opps.map(p => cardHtml(p)).join('');
   }
 
   // ── History ──────────────────────────────────────────────────────────────────

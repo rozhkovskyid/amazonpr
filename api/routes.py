@@ -179,6 +179,20 @@ async def automation_status():
     return get_status()
 
 
+@router.post("/api/automation/start")
+async def automation_start():
+    from automation.scheduler import start_scheduler
+    start_scheduler(interval_minutes=30)
+    return {"message": "Automation started"}
+
+
+@router.post("/api/automation/pause")
+async def automation_pause():
+    from automation.scheduler import stop_scheduler
+    stop_scheduler()
+    return {"message": "Automation paused"}
+
+
 @router.post("/api/automation/trigger")
 async def automation_trigger(background_tasks: BackgroundTasks, category: str = None):
     from automation.scheduler import trigger_scan_now
