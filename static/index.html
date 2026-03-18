@@ -946,6 +946,11 @@
       const countEl = document.getElementById('oppCount');
       if (opps.length) { countEl.style.display = 'inline'; countEl.textContent = opps.length; }
       else { countEl.style.display = 'none'; }
+      // Merge into allProducts so openModal can find them
+      opps.forEach(o => {
+        const idx = allProducts.findIndex(p => p.product_id === o.product_id);
+        if (idx >= 0) allProducts[idx] = o; else allProducts.push(o);
+      });
       renderOpportunities(opps);
     } catch (e) {
       document.getElementById('oppTabStatus').textContent = 'Failed to load opportunities.';
