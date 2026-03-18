@@ -13,7 +13,7 @@ from automation.events import emit
 logger = logging.getLogger(__name__)
 
 # ── Tuning constants ──────────────────────────────────────────────────────────
-PRODUCTS_PER_CATEGORY = 30   # how many Alibaba products to pull per category
+PRODUCTS_PER_CATEGORY = 50   # how many Alibaba products to pull per category
 AMAZON_CONCURRENCY    = 1    # API only allows 1 concurrent session
 AI_SCORE_THRESHOLD    = 58   # math score required to trigger AI analysis
 WATCH_THRESHOLD       = 40   # minimum score worth storing/logging
