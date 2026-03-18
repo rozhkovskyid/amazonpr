@@ -469,6 +469,9 @@
         <div style="color:var(--muted);font-size:11px;">No scans yet.</div>
       </div>
 
+      <input id="triggerCategory" type="text" placeholder="Category (leave blank for auto)"
+        style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;
+        padding:7px 10px;font-size:12px;color:var(--text);font-family:inherit;margin-bottom:6px;"/>
       <button class="btn btn-secondary" id="triggerBtn" onclick="triggerScan()" style="width:100%;font-size:12px;padding:7px 10px;">
         ▶ Scan Now
       </button>
@@ -920,10 +923,13 @@
 
   async function triggerScan() {
     const btn = document.getElementById('triggerBtn');
+    const cat = (document.getElementById('triggerCategory').value || '').trim();
     btn.disabled = true;
     btn.textContent = 'Scanning…';
     try {
-      await fetch('/api/automation/trigger', { method: 'POST' });
+      const url = cat ? `/api/automation/trigger?category=${encodeURIComponent(cat)}` : '/api/automation/trigger';
+      await fetch(url, { method: 'POST' });
+      if (cat) document.getElementById('triggerCategory').value = '';
       await loadAutomationStatus();
       setTimeout(loadAutomationStatus, 3000);
     } finally {
