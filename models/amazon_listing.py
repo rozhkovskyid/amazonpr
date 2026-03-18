@@ -5,11 +5,11 @@ from datetime import datetime
 
 class AmazonListing(BaseModel):
     """A single Amazon product listing from search results."""
-    asin: str
-    title: str
+    asin: str = ""
+    title: str = ""
     price: Optional[float] = None
     original_price: Optional[float] = None
-    currency: str = "USD"
+    currency: Optional[str] = "USD"
     rating: Optional[float] = None
     reviews: Optional[int] = None
     link: Optional[str] = None
@@ -32,7 +32,7 @@ class AmazonListingDetail(BaseModel):
     brand: Optional[str] = None
     current_price: Optional[float] = None
     original_price: Optional[float] = None
-    currency: str = "USD"
+    currency: Optional[str] = "USD"
     availability: Optional[str] = None
     number_of_offers: Optional[int] = None
     rating: Optional[float] = None
